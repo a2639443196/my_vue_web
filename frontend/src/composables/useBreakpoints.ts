@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, readonly, onMounted, onUnmounted } from 'vue'
 
 export interface Breakpoints {
   xs: number

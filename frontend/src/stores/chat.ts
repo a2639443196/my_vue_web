@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import { io, type Socket } from 'socket.io-client'
-import api from '@/api'
-import type { ChatRoom, ChatMessage, OnlineUser } from '@/types/chat'
+import { api, chatApi } from '@/api'
+import type { ChatRoom, Message, ChatUser, TypingUser } from '@/types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   // State
@@ -109,7 +109,7 @@ export const useChatStore = defineStore('chat', () => {
 
     socket.value.emit('typing', {
       room_id: roomId,
-      is_typing
+      is_typing: isTyping
     })
   }
 

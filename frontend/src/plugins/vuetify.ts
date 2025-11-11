@@ -1,9 +1,10 @@
 import { createVuetify } from 'vuetify'
 import { md3 } from 'vuetify/blueprints'
 import 'vuetify/styles'
-import { VDataTable } from 'vuetify/labs/VDataTable'
-import { VCalendar } from 'vuetify/labs/VCalendar'
-import { VSkeletonLoader } from 'vuetify/labs/VSkeletonLoader'
+// Vuetify labs components are now part of the main package
+import { VDataTable } from 'vuetify/components'
+import { VCalendar } from 'vuetify/components'
+import { VSkeletonLoader } from 'vuetify/components'
 
 export const vuetify = createVuetify({
   blueprint: md3,

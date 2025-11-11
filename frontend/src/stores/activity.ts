@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { format, startOfDay, endOfDay, subDays } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import api from '@/api'
+import { api, activityApi } from '@/api'
 import type { Activity, ActivityStats } from '@/types/activity'
 
 export const useActivityStore = defineStore('activity', () => {
