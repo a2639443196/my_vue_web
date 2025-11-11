@@ -1,12 +1,14 @@
+version: '3.8'
+
 services:
   backend:
     build:
-      context: ./backend
+      context: /var/www/my_vue_web/backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - /var/www/my_vue_web/backend:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
@@ -20,16 +22,16 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: /var/www/my_vue_web/frontend
       dockerfile: Dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - /var/www/my_vue_web/frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
+      - VITE_API_URL=http://backend:8000
+      - VITE_WS_URL=ws://backend:8000
 
   db:
     image: postgres:15-alpine
@@ -55,7 +57,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /var/www/my_vue_web/nginx.conf:/etc/nginx/nginx.conf
       - static_volume:/var/www/static
     depends_on:
       - backend
