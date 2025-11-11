@@ -11,7 +11,7 @@ import router from './router'
 // Import styles
 import '@/styles/main.css'
 import 'vuetify/styles'
-import 'naive-ui/es/style'
+// Naive UI styles are handled by the plugin
 
 // Create i18n instance
 const i18n = createI18n({

@@ -57,6 +57,7 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     rollupOptions: {
+      external: [],
       output: {
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
