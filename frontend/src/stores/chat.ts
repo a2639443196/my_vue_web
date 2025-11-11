@@ -11,7 +11,7 @@ export const useChatStore = defineStore('chat', () => {
   const rooms = ref<ChatRoom[]>([])
   const currentRoom = ref<ChatRoom | null>(null)
   const messages = ref<Message[]>([])
-  const onlineUsers = ref<Record<string, boolean>>({})
+  const onlineUsers = ref<ChatUser[]>([])
   const typingUsers = ref<Record<string, TypingUser[]>>({})
   const unreadCounts = ref<Record<string, number>>({})
 

@@ -21,9 +21,9 @@ export const api = {
   // Generic request method
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseURL}${endpoint}`
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     }
 
     // Add auth token if available

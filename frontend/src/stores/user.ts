@@ -93,7 +93,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     try {
       if (token.value) {
-        await api.post('/auth/logout')
+        await api.post('/auth/logout', {})
       }
     } catch (error) {
       // Ignore logout errors
