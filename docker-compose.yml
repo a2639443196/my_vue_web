@@ -11,7 +11,8 @@ services:
       - media_volume:/app/media
     environment:
       - DJANGO_SETTINGS_MODULE=wellness_hub.settings
-      - DEBUG=False
+      - DEBUG=True
+      - ALLOWED_HOSTS=*
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/wellness_hub
       - REDIS_URL=redis://redis:6379/0
     depends_on:

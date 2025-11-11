@@ -14,6 +14,7 @@ RUN apt-get update \
         build-essential \
         libpq-dev \
         gettext \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Python 依赖

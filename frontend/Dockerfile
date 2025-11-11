@@ -17,8 +17,8 @@ FROM nginx:alpine AS production-stage
 # 拷贝构建结果到 nginx 默认站点目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# 拷贝 nginx 配置（如果有）
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# 拷贝 frontend nginx 配置
+COPY frontend-nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
