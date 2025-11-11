@@ -4,7 +4,7 @@ FROM node:18-alpine AS build-stage
 WORKDIR /app
 
 # 拷贝依赖文件并安装全部依赖（包括 devDependencies）
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
 
 # 拷贝源码并构建
