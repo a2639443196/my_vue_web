@@ -1,25 +1,26 @@
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
 # 环境变量
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+# 安装系统依赖 (Alpine使用apk包管理器，更快更小)
+RUN apk add --no-cache \
         postgresql-client \
-        build-essential \
-        libpq-dev \
-        gettext \
         curl \
-    && rm -rf /var/lib/apt/lists/*
+        gcc \
+        musl-dev \
+        libpq-dev \
+        gettext
 
 # 安装 Python 依赖
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# 清理构建依赖
+RUN apk del gcc musl-dev libpq-dev
 
 # 复制后端代码
 COPY backend/ ./
