@@ -1,5 +1,4 @@
-# ===== Build stage =====
-FROM node:18-alpine AS build-stage
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -7,18 +6,10 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
 
-# 拷贝前端源码并构建
+# 拷贝前端源码
 COPY frontend/ ./
-RUN npm run build
 
-# ===== Production stage =====
-FROM nginx:alpine AS production-stage
+EXPOSE 5173
 
-# 拷贝构建结果到 nginx 默认站点目录
-COPY --from=build-stage /app/dist /usr/share/nginx/html
-
-# 拷贝 frontend nginx 配置
-COPY frontend-nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# 开发模式启动，支持热重载
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
