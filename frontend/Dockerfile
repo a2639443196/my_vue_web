@@ -1,31 +1,24 @@
-# Build stage
+# ===== Build stage =====
 FROM node:18-alpine AS build-stage
 
 WORKDIR /app
 
-# Copy package files
+# 拷贝依赖文件并安装全部依赖（包括 devDependencies）
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm install --omit=dev
-
-# Copy source code
+# 拷贝源码并构建
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production stage
+# ===== Production stage =====
 FROM nginx:alpine AS production-stage
 
-# Copy built assets from build stage
+# 拷贝构建结果到 nginx 默认站点目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# 拷贝 nginx 配置（如果有）
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
 EXPOSE 80
-
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
