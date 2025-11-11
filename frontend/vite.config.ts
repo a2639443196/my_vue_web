@@ -5,6 +5,8 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
 import { Vuetify3Resolver } from 'unplugin-vue-components/resolvers'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -67,8 +69,8 @@ export default defineConfig({
   css: {
     postcss: {
       plugins: [
-        require('tailwindcss'),
-        require('autoprefixer')
+        tailwindcss,
+        autoprefixer
       ]
     }
   },
