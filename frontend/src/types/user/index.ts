@@ -98,3 +98,12 @@ export interface AuthState {
   isLoading: boolean
   error: string | null
 }
+
+export interface LoginCredentials {
+  email: string
+  password: string
+}
+
+export interface RegisterData extends UserFormData {
+  confirmPassword: string
+}

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { io, type Socket } from 'socket.io-client'
 import { api, chatApi } from '@/api'
-import type { ChatRoom, Message, ChatUser, TypingUser } from '@/types/chat'
+import type { ChatRoom, Message, ChatUser, TypingUser, ChatState } from '@/types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   // State
@@ -10,14 +10,14 @@ export const useChatStore = defineStore('chat', () => {
   const connected = ref(false)
   const rooms = ref<ChatRoom[]>([])
   const currentRoom = ref<ChatRoom | null>(null)
-  const messages = ref<ChatMessage[]>([])
-  const onlineUsers = ref<OnlineUser[]>([])
-  const typingUsers = ref<Set<string>>(new Set())
+  const messages = ref<Message[]>([])
+  const onlineUsers = ref<Record<string, boolean>>({})
+  const typingUsers = ref<Record<string, TypingUser[]>>({})
   const unreadCounts = ref<Record<string, number>>({})
 
   // Getters
   const globalMessages = computed(() =>
-    messages.value.filter(m => m.room_id === 'global')
+    messages.value.filter(m => m.roomId === 'global')
   )
 
   const hasUnreadMessages = computed(() =>
@@ -114,14 +114,23 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const handleMessage = (data: any) => {
-    messages.value.push({
-      ...data.message,
-      created_at: new Date(data.message.created_at)
-    })
+    const message: Message = {
+      id: data.message.id,
+      roomId: data.message.room_id || data.message.roomId,
+      senderId: data.message.sender_id || data.message.senderId,
+      senderName: data.message.sender_name || data.message.senderName,
+      content: data.message.content,
+      type: data.message.type || 'text',
+      timestamp: new Date(data.message.timestamp || data.message.created_at),
+      isEdited: data.message.is_edited,
+      editedAt: data.message.edited_at ? new Date(data.message.edited_at) : undefined
+    }
+
+    messages.value.push(message)
 
     // Update unread count if not in current room
-    if (currentRoom.value?.id !== data.message.room_id) {
-      const roomId = data.message.room_id
+    if (currentRoom.value?.id !== message.roomId) {
+      const roomId = message.roomId
       unreadCounts.value[roomId] = (unreadCounts.value[roomId] || 0) + 1
     }
 
@@ -135,16 +144,36 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const handleTyping = (data: any) => {
+    const roomId = data.room_id || data.roomId
+    const typingUser: TypingUser = {
+      userId: data.user.id,
+      userName: data.user.username,
+      timestamp: new Date()
+    }
+
+    if (!typingUsers.value[roomId]) {
+      typingUsers.value[roomId] = []
+    }
+
     if (data.is_typing) {
-      typingUsers.value.add(data.user.username)
+      // Add or update typing user
+      typingUsers.value[roomId] = typingUsers.value[roomId].filter(
+        u => u.userId !== typingUser.userId
+      )
+      typingUsers.value[roomId].push(typingUser)
     } else {
-      typingUsers.value.delete(data.user.username)
+      // Remove typing user
+      typingUsers.value[roomId] = typingUsers.value[roomId].filter(
+        u => u.userId !== typingUser.userId
+      )
     }
 
     // Remove typing indicator after 3 seconds
     if (data.is_typing) {
       setTimeout(() => {
-        typingUsers.value.delete(data.user.username)
+        typingUsers.value[roomId] = typingUsers.value[roomId].filter(
+          u => u.userId !== typingUser.userId
+        )
       }, 3000)
     }
   }

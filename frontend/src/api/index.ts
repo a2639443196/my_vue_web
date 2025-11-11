@@ -1,18 +1,38 @@
 // API module for Wellness Hub
 // This file exports all API services
 
+// Store token for API requests
+let authToken: string | null = null
+
 export const api = {
   // Base API configuration
   baseURL: import.meta.env.VITE_API_URL || '/api',
 
+  // Set authentication token
+  setAuthToken(token: string) {
+    authToken = token
+  },
+
+  // Clear authentication token
+  clearAuthToken() {
+    authToken = null
+  },
+
   // Generic request method
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseURL}${endpoint}`
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    }
+
+    // Add auth token if available
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     }
 

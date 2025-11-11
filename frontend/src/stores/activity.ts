@@ -17,46 +17,46 @@ export const useActivityStore = defineStore('activity', () => {
 
   // Getters
   const waterIntakes = computed(() =>
-    activities.value.filter(a => a.category === 'water')
+    activities.value.filter(a => a.type === 'water')
   )
 
   const todayWaterIntake = computed(() => {
-    const today = format(new Date(), 'yyyy-MM-dd')
+    const today = new Date()
     return waterIntakes.value
-      .filter(a => a.date === today)
-      .reduce((sum, a) => sum + (a.details.amount || 0), 0)
+      .filter(a => format(a.timestamp, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd'))
+      .reduce((sum, a) => sum + a.value, 0)
   })
 
   const weeklyWaterIntake = computed(() => {
     const weekAgo = subDays(new Date(), 7)
     return waterIntakes.value
-      .filter(a => new Date(a.created_at) >= weekAgo)
-      .reduce((sum, a) => sum + (a.details.amount || 0), 0)
+      .filter(a => a.timestamp >= weekAgo)
+      .reduce((sum, a) => sum + a.value, 0)
   })
 
   const bowelMovements = computed(() =>
-    activities.value.filter(a => a.category === 'bowel')
+    activities.value.filter(a => a.type === 'bowel')
   )
 
   const smokingRecords = computed(() =>
-    activities.value.filter(a => a.category === 'smoking')
+    activities.value.filter(a => a.type === 'smoking')
   )
 
   const slackRecords = computed(() =>
-    activities.value.filter(a => a.category === 'slack')
+    activities.value.filter(a => a.type === 'slack')
   )
 
   // Actions
   const fetchActivities = async (params?: {
-    category?: string
+    type?: string
     start_date?: string
     end_date?: string
     limit?: number
   }) => {
     loading.value = true
     try {
-      const response = await api.get('/activities/', { params })
-      activities.value = response.data.results || response.data
+      const response = await activityApi.getActivities()
+      activities.value = response.results || response
     } catch (error) {
       console.error('Failed to fetch activities:', error)
       throw error
@@ -67,27 +67,33 @@ export const useActivityStore = defineStore('activity', () => {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/activities/stats/', {
-        params: {
-          start_date: format(dateRange.value[0], 'yyyy-MM-dd'),
-          end_date: format(dateRange.value[1], 'yyyy-MM-dd')
-        }
-      })
-      stats.value = response.data
+      // For now, create basic stats from activities
+      stats.value = {
+        total: activities.value.length,
+        average: activities.value.length > 0
+          ? activities.value.reduce((sum, a) => sum + a.value, 0) / activities.value.length
+          : 0,
+        streak: 0,
+        lastActivity: activities.value.length > 0
+          ? new Date(Math.max(...activities.value.map(a => a.timestamp.getTime())))
+          : undefined
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error)
     }
   }
 
-  const addWaterIntake = async (amount: number, type: 'small' | 'medium' | 'large' | 'custom' = 'medium') => {
+  const addWaterIntake = async (amount: number) => {
     try {
-      const response = await api.post('/activities/water/', {
-        amount,
-        type,
-        recorded_at: new Date().toISOString()
+      const newActivity = await activityApi.createActivity({
+        type: 'water',
+        value: amount,
+        unit: 'ml',
+        timestamp: new Date(),
+        note: ''
       })
-      activities.value.unshift(response.data)
-      return response.data
+      activities.value.unshift(newActivity)
+      return newActivity
     } catch (error) {
       console.error('Failed to add water intake:', error)
       throw error
@@ -162,22 +168,54 @@ export const useActivityStore = defineStore('activity', () => {
     }
   }
 
-  const exportData = async (format: 'json' | 'csv' | 'excel' = 'json') => {
+  const exportData = async (exportFormat: 'json' | 'csv' | 'excel' = 'json') => {
     try {
-      const response = await api.get('/activities/export/', {
-        params: {
-          format,
-          start_date: format(dateRange.value[0], 'yyyy-MM-dd'),
-          end_date: format(dateRange.value[1], 'yyyy-MM-dd')
-        },
-        responseType: 'blob'
-      })
+      // Create a simple client-side export
+      const dataToExport = activities.value.map(a => ({
+        type: a.type,
+        value: a.value,
+        unit: a.unit,
+        note: a.note,
+        timestamp: a.timestamp.toISOString(),
+        createdAt: a.createdAt.toISOString(),
+        updatedAt: a.updatedAt.toISOString()
+      }))
+
+      let content: string
+      let mimeType: string
+      let fileExtension: string
+
+      switch (exportFormat) {
+        case 'json':
+          content = JSON.stringify(dataToExport, null, 2)
+          mimeType = 'application/json'
+          fileExtension = 'json'
+          break
+        case 'csv':
+          // Simple CSV export
+          const headers = ['type', 'value', 'unit', 'note', 'timestamp', 'createdAt', 'updatedAt']
+          const csvRows = [
+            headers.join(','),
+            ...dataToExport.map(row =>
+              headers.map(h => `"${row[h as keyof typeof row] || ''}"`).join(',')
+            )
+          ]
+          content = csvRows.join('\n')
+          mimeType = 'text/csv'
+          fileExtension = 'csv'
+          break
+        default:
+          content = JSON.stringify(dataToExport, null, 2)
+          mimeType = 'application/json'
+          fileExtension = 'json'
+      }
 
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const blob = new Blob([content], { type: mimeType })
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `activities.${format}`)
+      link.setAttribute('download', `activities.${fileExtension}`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

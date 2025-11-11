@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, userApi } from '@/api'
-import type { User, UserFormData, ProfileUpdateData } from '@/types/user'
+import type { User, UserFormData, ProfileUpdateData, AuthState, LoginCredentials, RegisterData } from '@/types/user'
 
 export const useUserStore = defineStore('user', () => {
   const router = useRouter()
@@ -28,8 +28,8 @@ export const useUserStore = defineStore('user', () => {
       api.setAuthToken(savedToken)
 
       try {
-        const response = await api.get('/auth/profile/')
-        user.value = response.data.user
+        const userData = await userApi.getProfile()
+        user.value = userData
       } catch (error) {
         // Token invalid, clear it
         clearAuth()
@@ -42,8 +42,8 @@ export const useUserStore = defineStore('user', () => {
   const login = async (credentials: LoginCredentials) => {
     loading.value = true
     try {
-      const response = await api.post('/auth/login/', credentials)
-      const { user: userData, token: userToken } = response.data
+      const response = await api.post('/auth/login', credentials)
+      const { user: userData, token: userToken } = response
 
       user.value = userData
       token.value = userToken
@@ -57,9 +57,7 @@ export const useUserStore = defineStore('user', () => {
 
       return { success: true, user: userData }
     } catch (error: any) {
-      const message = error.response?.data?.non_field_errors?.[0] ||
-                     error.response?.data?.message ||
-                     '登录失败，请检查用户名和密码'
+      const message = error.message || '登录失败，请检查用户名和密码'
       throw new Error(message)
     } finally {
       loading.value = false
@@ -69,8 +67,8 @@ export const useUserStore = defineStore('user', () => {
   const register = async (data: RegisterData) => {
     loading.value = true
     try {
-      const response = await api.post('/auth/register/', data)
-      const { user: userData, token: userToken } = response.data
+      const response = await api.post('/auth/register', data)
+      const { user: userData, token: userToken } = response
 
       user.value = userData
       token.value = userToken
@@ -95,7 +93,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = async () => {
     try {
       if (token.value) {
-        await api.post('/auth/logout/')
+        await api.post('/auth/logout')
       }
     } catch (error) {
       // Ignore logout errors
@@ -106,20 +104,20 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const updateProfile = async (data: Partial<User>) => {
+  const updateProfile = async (data: ProfileUpdateData) => {
     if (!user.value || !token.value) throw new Error('User not authenticated')
 
     loading.value = true
     try {
-      const response = await api.put('/auth/profile/', data)
-      user.value = { ...user.value, ...response.data.user }
+      const updatedUser = await userApi.updateProfile(data)
+      user.value = { ...user.value, ...updatedUser }
 
       // Update localStorage
       localStorage.setItem('user', JSON.stringify(user.value))
 
       return { success: true, user: user.value }
     } catch (error: any) {
-      const message = error.response?.data?.message || '更新失败'
+      const message = error.message || '更新失败'
       throw new Error(message)
     } finally {
       loading.value = false
@@ -129,13 +127,10 @@ export const useUserStore = defineStore('user', () => {
   const changePassword = async (data: { old_password: string; new_password: string }) => {
     loading.value = true
     try {
-      await api.post('/auth/change-password/', data)
+      await api.post('/auth/change-password', data)
       return { success: true }
     } catch (error: any) {
-      const message = error.response?.data?.old_password?.[0] ||
-                     error.response?.data?.new_password?.[0] ||
-                     error.response?.data?.message ||
-                     '密码修改失败'
+      const message = error.message || '密码修改失败'
       throw new Error(message)
     } finally {
       loading.value = false
@@ -147,15 +142,15 @@ export const useUserStore = defineStore('user', () => {
     token.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    api.setAuthToken(null)
+    api.clearAuthToken()
   }
 
   const refreshToken = async () => {
     if (!token.value) return false
 
     try {
-      const response = await api.post('/auth/refresh/')
-      const { token: newToken } = response.data
+      const response = await api.post('/auth/refresh', { token: token.value })
+      const { token: newToken } = response
 
       token.value = newToken
       localStorage.setItem('token', newToken)
