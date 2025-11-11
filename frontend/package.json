@@ -1,0 +1,51 @@
+{
+  "name": "wellness-hub-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@iconify/vue": "^4.1.1",
+    "@mdi/font": "^7.3.67",
+    "@vuepic/vue-datepicker": "^12.0.3",
+    "@vueuse/core": "^10.5.0",
+    "@vueuse/head": "^2.0.0",
+    "axios": "^1.6.0",
+    "chart.js": "^4.4.0",
+    "dayjs": "^1.11.10",
+    "naive-ui": "^2.35.0",
+    "pinia": "^2.1.7",
+    "socket.io-client": "^4.7.4",
+    "vue": "^3.3.8",
+    "vue-chartjs": "^5.2.0",
+    "vue-i18n": "^9.8.0",
+    "vue-router": "^4.2.5",
+    "vuetify": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20.9.0",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "@vitejs/plugin-vue": "^4.5.0",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "@vue/tsconfig": "^0.4.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.54.0",
+    "eslint-plugin-vue": "^9.18.1",
+    "js-cookie": "^3.0.5",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "~5.2.0",
+    "unplugin-auto-import": "^0.17.2",
+    "unplugin-vue-components": "^0.25.2",
+    "vite": "^5.0.0",
+    "vue-tsc": "^1.8.22"
+  }
+}

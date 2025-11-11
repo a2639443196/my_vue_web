@@ -1,0 +1,51 @@
+# === Python / Django ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.sqlite3
+db.sqlite3
+.env
+venv/
+env/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Django specific
+media/
+staticfiles/
+local_settings.py
+
+# === Node / Vue ===
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+pnpm-lock.yaml
+
+# build output
+/public/dist/
+/frontend/dist/
+/frontend/node_modules/
+
+# === OS / IDE ===
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+
+# === coverage / test ===
+coverage/
+htmlcov/
+*.cover
+.pytest_cache/
+.cache/
