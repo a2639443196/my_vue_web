@@ -1,12 +1,12 @@
 services:
   backend:
     build:
-      context: /var/www/my_vue_web/backend
-      dockerfile: Dockerfile
+      context: /var/www/myweb-vue
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - /var/www/my_vue_web/backend:/app
+      - /var/www/myweb-vue/backend:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
@@ -20,12 +20,12 @@ services:
 
   frontend:
     build:
-      context: /var/www/my_vue_web/frontend
-      dockerfile: Dockerfile
+      context: /var/www/myweb-vue
+      dockerfile: frontend/Dockerfile
     ports:
       - "5173:5173"
     volumes:
-      - /var/www/my_vue_web/frontend:/app
+      - /var/www/myweb-vue/frontend:/app
       - /app/node_modules
     environment:
       - VITE_API_URL=http://backend:8000
