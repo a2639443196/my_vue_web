@@ -25,9 +25,13 @@ RUN apk del gcc musl-dev libpq-dev
 # 复制后端代码
 COPY backend/ ./
 
+# 确保入口脚本可执行
+RUN chmod +x entrypoint.sh
+
 # 收集静态文件
 RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "wellness_hub.asgi:application"]
