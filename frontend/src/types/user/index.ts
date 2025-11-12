@@ -1,102 +1,52 @@
-export interface User {
+export interface HydrationEntry {
   id: string
-  email: string
-  username: string
-  firstName?: string
-  lastName?: string
-  avatar?: string
-  dateOfBirth?: Date
-  gender?: 'male' | 'female' | 'other'
-  height?: number // in cm
-  weight?: number // in kg
-  preferences: UserPreferences
-  stats: UserStats
-  createdAt: Date
-  updatedAt: Date
-  lastLoginAt?: Date
-  emailVerified: boolean
+  amount: number
+  recordedAt: string
+  note?: string
 }
 
-export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system'
-  language: string
-  timezone: string
-  notifications: NotificationPreferences
-  privacy: PrivacyPreferences
-  units: UnitPreferences
+export interface HydrationDay {
+  date: string
+  total: number
+  entries: HydrationEntry[]
 }
 
-export interface NotificationPreferences {
-  email: boolean
-  push: boolean
-  inApp: boolean
-  reminders: boolean
-  achievements: boolean
-  social: boolean
-}
+export type GameKey = 'schulte' | 'reaction'
 
-export interface PrivacyPreferences {
-  profileVisible: boolean
-  activityVisible: boolean
-  showInLeaderboards: boolean
-  allowFriendRequests: boolean
-}
-
-export interface UnitPreferences {
-  weight: 'kg' | 'lbs'
-  height: 'cm' | 'ft'
-  temperature: 'celsius' | 'fahrenheit'
-  distance: 'km' | 'miles'
-}
-
-export interface UserStats {
-  totalActivities: number
-  currentStreak: number
-  longestStreak: number
-  joinDate: Date
-  lastActiveDate: Date
-  achievements: Achievement[]
-  level: number
-  experience: number
-}
-
-export interface Achievement {
+export interface GameRecord {
   id: string
-  name: string
+  game: GameKey
+  score: number
+  unit: string
+  summary: string
+  createdAt: string
+  details?: Record<string, any>
+}
+
+export type OperationType = 'water' | 'game' | 'chat'
+
+export interface OperationRecord {
+  id: string
+  type: OperationType
+  title: string
   description: string
-  icon: string
-  unlockedAt: Date
-  category: 'water' | 'bowel' | 'smoking' | 'slack' | 'social' | 'general'
-  rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  createdAt: string
+  metadata?: Record<string, any>
 }
 
-export interface UserFormData {
+export interface StoredUser {
+  id: string
   email: string
   username: string
-  password: string
-  firstName?: string
-  lastName?: string
-  dateOfBirth?: string
-  gender?: 'male' | 'female' | 'other'
-}
-
-export interface ProfileUpdateData {
-  firstName?: string
-  lastName?: string
+  passwordHash: string
   avatar?: string
-  dateOfBirth?: Date
-  gender?: 'male' | 'female' | 'other'
-  height?: number
-  weight?: number
-  preferences?: Partial<UserPreferences>
-}
-
-export interface AuthState {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
+  hydrationTarget: number
+  hydrationLog: Record<string, HydrationDay>
+  gameRecords: GameRecord[]
+  operations: OperationRecord[]
+  createdAt: string
+  updatedAt: string
+  lastLoginAt?: string
 }
 
 export interface LoginCredentials {
@@ -104,6 +54,24 @@ export interface LoginCredentials {
   password: string
 }
 
-export interface RegisterData extends UserFormData {
+export interface RegisterData {
+  email: string
+  username: string
+  password: string
   confirmPassword: string
+}
+
+export interface ProfileUpdateData {
+  email?: string
+  username?: string
+  avatar?: string
+  hydrationTarget?: number
+}
+
+export interface AuthState {
+  user: StoredUser | null
+  token: string | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  error: string | null
 }

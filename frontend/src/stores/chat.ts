@@ -1,309 +1,247 @@
-import { defineStore } from 'pinia'
-import { ref, computed, readonly } from 'vue'
-import { io, type Socket } from 'socket.io-client'
-import { api, chatApi } from '@/api'
-import type { ChatRoom, Message, ChatUser, TypingUser, ChatState } from '@/types/chat'
+import { defineStore, storeToRefs } from 'pinia'
+import { ref, computed, readonly, watch } from 'vue'
+import type { ChatMessage, ChatPresence } from '@/types/chat'
+import { useUserStore } from '@/stores/user'
+
+const CHANNEL_NAME = 'yanzu-chat-channel'
+const MESSAGES_KEY = 'yanzu-chat-messages'
+const PRESENCE_INTERVAL = 5000
+const PRESENCE_TIMEOUT = 15000
+
+const companions: ChatPresence[] = [
+  {
+    id: 'companion-yanzu',
+    name: '彦祖小助手',
+    status: 'online',
+    lastActive: new Date().toISOString()
+  },
+  {
+    id: 'companion-focus',
+    name: '专注训练官',
+    status: 'online',
+    lastActive: new Date().toISOString()
+  }
+]
+
+const generateId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2)
+
+const loadMessages = (): ChatMessage[] => {
+  if (typeof localStorage === 'undefined') return []
+  const raw = localStorage.getItem(MESSAGES_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as ChatMessage[]
+    return parsed
+  } catch (error) {
+    console.error('Failed to parse chat messages', error)
+    return []
+  }
+}
+
+const persistMessages = (messages: ChatMessage[]) => {
+  if (typeof localStorage === 'undefined') return
+  localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages))
+}
+
+const supportsBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
 
 export const useChatStore = defineStore('chat', () => {
-  // State
-  const socket = ref<Socket | null>(null)
-  const connected = ref(false)
-  const rooms = ref<ChatRoom[]>([])
-  const currentRoom = ref<ChatRoom | null>(null)
-  const messages = ref<Message[]>([])
-  const onlineUsers = ref<ChatUser[]>([])
-  const typingUsers = ref<Record<string, TypingUser[]>>({})
-  const unreadCounts = ref<Record<string, number>>({})
+  const userStore = useUserStore()
+  const { user } = storeToRefs(userStore)
 
-  // Getters
-  const globalMessages = computed(() =>
-    messages.value.filter(m => m.roomId === 'global')
-  )
+  const messages = ref<ChatMessage[]>(loadMessages())
+  const onlineUsers = ref<ChatPresence[]>([])
+  const initialized = ref(false)
 
-  const hasUnreadMessages = computed(() =>
-    Object.values(unreadCounts.value).some(count => count > 0)
-  )
+  let channel: BroadcastChannel | null = null
+  let presenceTimer: number | null = null
 
-  const totalUnreadCount = computed(() =>
-    Object.values(unreadCounts.value).reduce((sum, count) => sum + count, 0)
-  )
-
-  // Actions
-  const connect = (token: string) => {
-    if (socket.value?.connected) return
-
-    socket.value = io(`${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/ws/chat/`, {
-      auth: { token },
-      transports: ['websocket', 'polling']
-    })
-
-    socket.value.on('connect', () => {
-      connected.value = true
-      console.log('Connected to chat server')
-      fetchOnlineUsers()
-    })
-
-    socket.value.on('disconnect', () => {
-      connected.value = false
-      console.log('Disconnected from chat server')
-    })
-
-    socket.value.on('chat_message', (data) => {
-      handleMessage(data)
-    })
-
-    socket.value.on('typing', (data) => {
-      handleTyping(data)
-    })
-
-    socket.value.on('user_joined', (data) => {
-      handleUserJoined(data)
-    })
-
-    socket.value.on('user_left', (data) => {
-      handleUserLeft(data)
-    })
-
-    socket.value.on('error', (error) => {
-      console.error('Chat error:', error)
-    })
-  }
-
-  const disconnect = () => {
-    if (socket.value) {
-      socket.value.disconnect()
-      socket.value = null
-      connected.value = false
+  const ensureSystemWelcome = () => {
+    if (messages.value.length === 0) {
+      addSystemMessage('欢迎来到彦祖的导航站聊天室，和大家打个招呼吧！')
     }
   }
 
-  const joinRoom = (roomId: string) => {
-    if (!socket.value?.connected) return
-
-    socket.value.emit('join_room', { room_id: roomId })
-    loadRoomMessages(roomId)
+  const broadcast = (type: string, payload: any) => {
+    if (!supportsBroadcast) return
+    if (!channel) {
+      channel = new BroadcastChannel(CHANNEL_NAME)
+      channel.onmessage = handleChannelMessage
+    }
+    channel.postMessage({ type, payload })
   }
 
-  const leaveRoom = (roomId: string) => {
-    if (!socket.value?.connected) return
+  const handleChannelMessage = (event: MessageEvent) => {
+    const { type, payload } = event.data as { type: string; payload: any }
+    if (type === 'message') {
+      if (messages.value.some(message => message.id === payload.id)) return
+      messages.value.push(payload)
+      messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      persistMessages(messages.value)
+    }
 
-    socket.value.emit('leave_room', { room_id: roomId })
-    if (currentRoom.value?.id === roomId) {
-      currentRoom.value = null
-      messages.value = []
+    if (type === 'presence') {
+      updatePresence(payload)
     }
   }
 
-  const sendMessage = (content: string, roomId: string = 'global', type: 'text' | 'image' | 'file' = 'text') => {
-    if (!socket.value?.connected || !content.trim()) return
-
-    socket.value.emit('chat_message', {
-      room_id: roomId,
-      content: content.trim(),
-      message_type: type
-    })
+  const updatePresence = (presence: ChatPresence) => {
+    const now = Date.now()
+    const list = onlineUsers.value.filter(user => now - new Date(user.lastActive).getTime() < PRESENCE_TIMEOUT)
+    const index = list.findIndex(item => item.id === presence.id)
+    if (index !== -1) {
+      list[index] = { ...presence }
+    } else {
+      list.push({ ...presence })
+    }
+    onlineUsers.value = list
   }
 
-  const sendTyping = (roomId: string, isTyping: boolean) => {
-    if (!socket.value?.connected) return
-
-    socket.value.emit('typing', {
-      room_id: roomId,
-      is_typing: isTyping
-    })
+  const prunePresence = () => {
+    const now = Date.now()
+    onlineUsers.value = onlineUsers.value.filter(
+      presence => now - new Date(presence.lastActive).getTime() < PRESENCE_TIMEOUT
+    )
   }
 
-  const handleMessage = (data: any) => {
-    const message: Message = {
-      id: data.message.id,
-      roomId: data.message.room_id || data.message.roomId,
-      senderId: data.message.sender_id || data.message.senderId,
-      senderName: data.message.sender_name || data.message.senderName,
-      content: data.message.content,
-      type: data.message.type || 'text',
-      timestamp: new Date(data.message.timestamp || data.message.created_at),
-      isEdited: data.message.is_edited,
-      editedAt: data.message.edited_at ? new Date(data.message.edited_at) : undefined
+  const addSystemMessage = (content: string) => {
+    const message: ChatMessage = {
+      id: generateId(),
+      authorId: 'system',
+      authorName: '系统',
+      content,
+      createdAt: new Date().toISOString(),
+      isSystem: true
+    }
+    messages.value.push(message)
+    messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    persistMessages(messages.value)
+    broadcast('message', message)
+  }
+
+  const sendMessage = (content: string) => {
+    const trimmed = content.trim()
+    if (!trimmed) return
+
+    const authorId = user.value?.id ?? 'guest'
+    const authorName = user.value?.username ?? '游客'
+
+    const message: ChatMessage = {
+      id: generateId(),
+      authorId,
+      authorName,
+      content: trimmed,
+      createdAt: new Date().toISOString()
     }
 
     messages.value.push(message)
+    messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    persistMessages(messages.value)
+    broadcast('message', message)
+    scheduleCompanionReply(message)
+  }
 
-    // Update unread count if not in current room
-    if (currentRoom.value?.id !== message.roomId) {
-      const roomId = message.roomId
-      unreadCounts.value[roomId] = (unreadCounts.value[roomId] || 0) + 1
-    }
-
-    // Scroll to bottom after a short delay
+  const scheduleCompanionReply = (message: ChatMessage) => {
+    if (message.authorId === 'system') return
+    const replies = [
+      '保持水分，健康每一天！',
+      '记得也去玩玩小游戏放松一下～',
+      '今天的目标完成了吗？坚持就是胜利！',
+      '好消息要记得打卡分享给大家哦！'
+    ]
+    const reply = replies[Math.floor(Math.random() * replies.length)]
     setTimeout(() => {
-      const container = document.querySelector('.chat-messages')
-      if (container) {
-        container.scrollTop = container.scrollHeight
-      }
-    }, 100)
+      addSystemMessage(reply)
+    }, 1500 + Math.random() * 2000)
   }
 
-  const handleTyping = (data: any) => {
-    const roomId = data.room_id || data.roomId
-    const typingUser: TypingUser = {
-      userId: data.user.id,
-      userName: data.user.username,
-      timestamp: new Date()
+  const announcePresence = (status: 'online' | 'away' = 'online') => {
+    if (!user.value) return
+    const presence: ChatPresence = {
+      id: user.value.id,
+      name: user.value.username,
+      avatar: user.value.avatar,
+      status,
+      lastActive: new Date().toISOString()
+    }
+    updatePresence(presence)
+    broadcast('presence', presence)
+  }
+
+  const initialize = () => {
+    if (initialized.value) return
+    ensureSystemWelcome()
+
+    if (supportsBroadcast) {
+      channel = new BroadcastChannel(CHANNEL_NAME)
+      channel.onmessage = handleChannelMessage
     }
 
-    if (!typingUsers.value[roomId]) {
-      typingUsers.value[roomId] = []
-    }
+    companions.forEach(companion =>
+      updatePresence({ ...companion, lastActive: new Date().toISOString() })
+    )
 
-    if (data.is_typing) {
-      // Add or update typing user
-      typingUsers.value[roomId] = typingUsers.value[roomId].filter(
-        u => u.userId !== typingUser.userId
-      )
-      typingUsers.value[roomId].push(typingUser)
-    } else {
-      // Remove typing user
-      typingUsers.value[roomId] = typingUsers.value[roomId].filter(
-        u => u.userId !== typingUser.userId
-      )
-    }
+    announcePresence()
 
-    // Remove typing indicator after 3 seconds
-    if (data.is_typing) {
-      setTimeout(() => {
-        typingUsers.value[roomId] = typingUsers.value[roomId].filter(
-          u => u.userId !== typingUser.userId
+    if (typeof window !== 'undefined') {
+      presenceTimer = window.setInterval(() => {
+        prunePresence()
+        announcePresence()
+        companions.forEach(companion =>
+          updatePresence({ ...companion, lastActive: new Date().toISOString() })
         )
-      }, 3000)
+      }, PRESENCE_INTERVAL)
+
+      window.addEventListener('beforeunload', () => announcePresence('away'))
+    }
+
+    initialized.value = true
+  }
+
+  const dispose = () => {
+    if (channel) {
+      channel.close()
+      channel = null
+    }
+    if (presenceTimer) {
+      clearInterval(presenceTimer)
+      presenceTimer = null
     }
   }
 
-  const handleUserJoined = (data: any) => {
-    // Update room member list
-    if (currentRoom.value?.id === data.room_id) {
-      // Add user to room members
-      console.log(`${data.user.username} joined the room`)
+  watch(
+    () => user.value?.id,
+    () => {
+      announcePresence()
     }
-  }
+  )
 
-  const handleUserLeft = (data: any) => {
-    // Update room member list
-    if (currentRoom.value?.id === data.room_id) {
-      // Remove user from room members
-      console.log(`${data.user.username} left the room`)
-    }
-  }
+  const orderedMessages = computed(() =>
+    [...messages.value].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    )
+  )
 
-  const fetchRooms = async () => {
-    try {
-      const response = await api.get('/chat/rooms/')
-      rooms.value = response.data.results || response.data
-    } catch (error) {
-      console.error('Failed to fetch rooms:', error)
-    }
-  }
-
-  const loadRoomMessages = async (roomId: string) => {
-    try {
-      const response = await api.get(`/chat/rooms/${roomId}/messages/`)
-      messages.value = response.data.results || response.data
-    } catch (error) {
-      console.error('Failed to load messages:', error)
-    }
-  }
-
-  const fetchOnlineUsers = async () => {
-    try {
-      const response = await api.get('/chat/online/')
-      onlineUsers.value = response.data.users || response.data
-    } catch (error) {
-      console.error('Failed to fetch online users:', error)
-    }
-  }
-
-  const createRoom = async (data: {
-    name: string
-    description?: string
-    is_public: boolean
-    max_members?: number
-  }) => {
-    try {
-      const response = await api.post('/chat/rooms/', data)
-      rooms.value.push(response.data)
-      return response.data
-    } catch (error) {
-      console.error('Failed to create room:', error)
-      throw error
-    }
-  }
-
-  const markAsRead = (roomId: string) => {
-    unreadCounts.value[roomId] = 0
-  }
-
-  // Connect to online users WebSocket
-  const connectOnlineUsers = (token: string) => {
-    const onlineSocket = io(`${import.meta.env.VITE_WS_URL || 'ws://localhost:8000'}/ws/online/`, {
-      auth: { token },
-      transports: ['websocket', 'polling']
-    })
-
-    onlineSocket.on('connect', () => {
-      console.log('Connected to online users')
-    })
-
-    onlineSocket.on('online_users', (data) => {
-      onlineUsers.value = data.users
-    })
-
-    onlineSocket.on('user_online', (data) => {
-      const index = onlineUsers.value.findIndex(u => u.id === data.user.id)
-      if (index === -1) {
-        onlineUsers.value.push(data.user)
-      }
-    })
-
-    onlineSocket.on('user_offline', (data) => {
-      onlineUsers.value = onlineUsers.value.filter(u => u.id !== data.user_id)
-    })
-  }
-
-  // Initialize
-  const initialize = async (token: string) => {
-    await Promise.all([
-      fetchRooms(),
-      connect(token),
-      connectOnlineUsers(token)
-    ])
-  }
+  const recentMessages = computed(() => orderedMessages.value.slice(-100))
 
   return {
     // State
-    socket: readonly(socket),
-    connected: readonly(connected),
-    rooms: readonly(rooms),
-    currentRoom: readonly(currentRoom),
     messages: readonly(messages),
     onlineUsers: readonly(onlineUsers),
-    typingUsers: readonly(typingUsers),
-    unreadCounts: readonly(unreadCounts),
+    initialized: readonly(initialized),
 
     // Getters
-    globalMessages,
-    hasUnreadMessages,
-    totalUnreadCount,
+    orderedMessages,
+    recentMessages,
 
     // Actions
-    connect,
-    disconnect,
-    joinRoom,
-    leaveRoom,
+    initialize,
+    dispose,
     sendMessage,
-    sendTyping,
-    fetchRooms,
-    fetchOnlineUsers,
-    createRoom,
-    markAsRead,
-    initialize
+    addSystemMessage,
+    announcePresence
   }
 })
