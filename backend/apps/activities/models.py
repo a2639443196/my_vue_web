@@ -43,21 +43,41 @@ class Activity(models.Model):
         return f"{self.user.username} - {self.get_category_display()}"
 
 
+class DrinkOption(models.Model):
+    """Preset/custom drink options."""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='drink_options',
+        null=True,
+        blank=True,
+        verbose_name="用户"
+    )
+    name = models.CharField(max_length=50, verbose_name="饮品名称")
+    amount = models.IntegerField(default=300, verbose_name="容量(ml)")
+    icon = models.CharField(max_length=20, null=True, blank=True, verbose_name="图标")
+    caffeine_mg = models.IntegerField(null=True, blank=True, verbose_name="咖啡因(mg)")
+    is_default = models.BooleanField(default=False, verbose_name="系统预设")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        db_table = 'drink_options'
+        verbose_name = "饮品选项"
+        verbose_name_plural = "饮品选项"
+        unique_together = ('user', 'name')
+
+    def __str__(self):
+        return self.name
+
+
 class WaterIntake(models.Model):
     """Water intake tracking."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='water_intakes')
     amount = models.IntegerField(verbose_name="饮水量(ml)")
-    type = models.CharField(
-        max_length=20,
-        choices=[
-            ('small', '小杯(250ml)'),
-            ('medium', '中杯(350ml)'),
-            ('large', '大杯(500ml)'),
-            ('custom', '自定义'),
-        ],
-        default='medium',
-        verbose_name="杯子类型"
-    )
+    type = models.CharField(max_length=20, default='custom', verbose_name="杯子类型")
+    drink_name = models.CharField(max_length=50, default='饮水', verbose_name="饮品名称")
+    drink_icon = models.CharField(max_length=20, null=True, blank=True, verbose_name="图标")
+    caffeine_mg = models.IntegerField(null=True, blank=True, verbose_name="咖啡因含量(mg)")
     recorded_at = models.DateTimeField(verbose_name="记录时间")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
 
@@ -153,3 +173,36 @@ class SmokingRecord(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.count}支"
+
+
+class SlackRecord(models.Model):
+    """Slack (摸鱼) tracking."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='slack_records')
+    duration = models.IntegerField(verbose_name="摸鱼时长(分钟)")
+    mood = models.CharField(
+        max_length=20,
+        choices=[
+            ('relaxed', '放松'),
+            ('bored', '无聊'),
+            ('stress', '缓解压力'),
+            ('social', '社交'),
+            ('other', '其他')
+        ],
+        null=True,
+        blank=True,
+        verbose_name="心情"
+    )
+    notes = models.TextField(null=True, blank=True, verbose_name="简短描述")
+    recorded_at = models.DateTimeField(verbose_name="记录时间")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        db_table = 'slack_records'
+        verbose_name = "摸鱼记录"
+        verbose_name_plural = "摸鱼记录"
+        indexes = [
+            models.Index(fields=['user', 'recorded_at'])
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.duration}分钟"

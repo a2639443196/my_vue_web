@@ -1,5 +1,5 @@
 <template>
-  <div class="layout">
+  <div class="layout-shell">
     <!-- Mobile top app bar -->
     <v-app-bar
       v-if="isMobile"
@@ -76,7 +76,7 @@
       v-if="!isMobile"
       permanent
       :width="280"
-      class="border-r"
+      class="border-r layout-sidebar"
     >
       <div class="pa-4">
         <h1 class="text-2xl font-bold gradient-text">Wellness Hub</h1>
@@ -96,7 +96,7 @@
 
       <template #append>
         <div class="pa-4">
-          <v-card v-if="userStore.user" class="text-center" elevation="0">
+          <v-card v-if="userStore.user" class="text-center sidebar-profile" elevation="0">
             <v-avatar size="64" class="mb-2">
               <v-img
                 v-if="userStore.user.avatar"
@@ -109,7 +109,7 @@
               {{ userStore.user.username }}
             </p>
             <p class="text-caption text-grey-500">
-              {{ userStore.user.email }}
+              {{ userContact }}
             </p>
             <v-btn
               class="mt-2"
@@ -126,12 +126,9 @@
     </v-navigation-drawer>
 
     <!-- Main content -->
-    <v-main>
+    <v-main class="layout-main">
       <v-container
-        :class="[
-          'pa-4',
-          { 'pa-2': isMobile }
-        ]"
+        class="layout-container"
         :fluid="isMobile"
       >
         <router-view v-slot="{ Component }">
@@ -145,6 +142,7 @@
     <!-- Bottom navigation for mobile -->
     <v-bottom-navigation
       v-if="isMobile && showBottomNav"
+      v-model="activeBottomNav"
       grow
       color="primary"
       class="border-t"
@@ -153,6 +151,7 @@
         v-for="item in bottomNavItems"
         :key="item.to"
         :to="item.to"
+        :value="item.to"
         variant="text"
       >
         <v-icon>{{ item.icon }}</v-icon>
@@ -164,22 +163,23 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { useTheme } from 'vuetify'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 import { useBreakpoints } from '@/composables/useBreakpoints'
+import { useThemeStore } from '@/stores/theme'
 
 // Composables
 const route = useRoute()
-const theme = useTheme()
+const router = useRouter()
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const { isMobile } = useBreakpoints()
+const themeStore = useThemeStore()
 
 // State
 const drawer = ref(false)
-const isDark = ref(false)
+const isDark = computed(() => themeStore.isDark)
 
 // Computed
 const pageTitle = computed(() => route.meta.title || 'Wellness Hub')
@@ -188,14 +188,13 @@ const showBottomNav = computed(() => {
   return !hiddenRoutes.includes(route.path)
 })
 
+const userContact = computed(() => userStore.user?.phone || userStore.user?.email || '未填写联系方式')
+
 const navigationItems = computed(() => [
   { to: '/', title: '首页', icon: 'mdi-home' },
   { to: '/dashboard', title: '仪表盘', icon: 'mdi-view-dashboard' },
   { to: '/activities', title: '活动记录', icon: 'mdi-chart-line' },
   { to: '/water', title: '饮水追踪', icon: 'mdi-water' },
-  { to: '/bowel', title: '健康记录', icon: 'mdi-toilet' },
-  { to: '/smoking', title: '戒烟追踪', icon: 'mdi-smoking' },
-  { to: '/slack', title: '摸鱼记录', icon: 'mdi-coffee' },
   { to: '/chat', title: '聊天室', icon: 'mdi-chat' },
   { to: '/games', title: '小游戏', icon: 'mdi-gamepad' },
 ])
@@ -208,42 +207,84 @@ const bottomNavItems = computed(() => [
 ])
 
 // Methods
+const resolveBottomNavValue = (path: string) => {
+  const match = bottomNavItems.value.find(item =>
+    path === item.to || path.startsWith(`${item.to}/`)
+  )
+  return match ? match.to : bottomNavItems.value[0].to
+}
+
+const activeBottomNav = ref(resolveBottomNavValue(route.path))
+
 const toggleTheme = () => {
-  isDark.value = !isDark.value
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+  themeStore.toggle()
 }
 
 const handleLogout = async () => {
   try {
     await userStore.logout()
+    router.push({ name: 'Login' })
     notificationStore.showSuccess('退出登录成功')
   } catch (error) {
     notificationStore.showError('退出登录失败')
   }
 }
 
-// Initialize theme
-const initializeTheme = () => {
-  const savedTheme = localStorage.getItem('theme')
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-
-  isDark.value = savedTheme === 'dark' || (!savedTheme && prefersDark)
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
-}
-
-// Watch route changes to close drawer on mobile
-watch(route, () => {
-  if (isMobile.value) {
-    drawer.value = false
+// Watch route changes to close drawer on mobile and keep bottom nav in sync
+watch(
+  () => route.fullPath,
+  () => {
+    if (isMobile.value) {
+      drawer.value = false
+    }
+    activeBottomNav.value = resolveBottomNavValue(route.path)
   }
-})
+)
 
-// Lifecycle
-initializeTheme()
+watch(
+  () => themeStore.currentTheme,
+  value => {
+    document.documentElement.setAttribute('data-theme', value)
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
+.layout-shell {
+  min-height: 100vh;
+  display: flex;
+  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08), transparent 45%),
+    radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.08), transparent 40%),
+    #f7f8fc;
+}
+
+.layout-sidebar {
+  backdrop-filter: blur(18px);
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.sidebar-profile {
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 16px;
+}
+
+.layout-main {
+  background: transparent;
+  padding-bottom: 2rem;
+}
+
+.layout-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+.layout-container.pa-2,
+.layout-container.pa-4 {
+  padding: clamp(0.75rem, 4vw, 1.5rem) !important;
+}
+
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -265,6 +306,17 @@ initializeTheme()
 @supports (padding: max(0px)) {
   .v-bottom-navigation {
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
+
+@media (max-width: 960px) {
+  .layout-shell {
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .layout-main {
+    padding-bottom: 4rem;
   }
 }
 </style>

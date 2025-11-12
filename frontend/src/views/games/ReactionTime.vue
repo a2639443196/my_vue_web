@@ -197,7 +197,8 @@ const formatDate = (date: string) => format(new Date(date), 'MM月dd日 HH:mm')
 
 <style scoped>
 .reaction-view {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
 }
 
@@ -208,12 +209,15 @@ const formatDate = (date: string) => format(new Date(date), 'MM月dd日 HH:mm')
 .test-panel {
   border-radius: 20px;
   height: 260px;
-  display: grid;
-  place-items: center;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 1.5rem;
   transition: background 0.3s ease;
   cursor: pointer;
   background: rgba(0, 0, 0, 0.04);
+  text-align: center;
 }
 
 .test-panel.waiting {
@@ -234,8 +238,12 @@ const formatDate = (date: string) => format(new Date(date), 'MM月dd日 HH:mm')
 
 .panel-content {
   text-align: center;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.6rem;
+  max-width: 420px;
+  text-wrap: balance;
+  word-break: break-word;
 }
 
 .panel-content .hint {
@@ -311,5 +319,23 @@ const formatDate = (date: string) => format(new Date(date), 'MM月dd日 HH:mm')
   text-align: center;
   color: rgba(0, 0, 0, 0.45);
   padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  .reaction-view {
+    gap: 1.25rem;
+  }
+
+  .main-card {
+    border-radius: 18px;
+  }
+
+  .test-panel {
+    height: 200px;
+  }
+
+  .chips :deep(.v-chip) {
+    font-size: 0.85rem;
+  }
 }
 </style>

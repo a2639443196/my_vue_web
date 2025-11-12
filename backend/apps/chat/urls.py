@@ -5,5 +5,7 @@ urlpatterns = [
     path('rooms/', views.ChatRoomViewSet.as_view({'get': 'list', 'post': 'create'})),
     path('rooms/<int:pk>/', views.ChatRoomDetailView.as_view()),
     path('rooms/<int:pk>/messages/', views.ChatMessageListView.as_view()),
+    path('rooms/default/', views.DefaultChatRoomView.as_view()),
+    path('rooms/default/messages/', views.DefaultChatMessagesView.as_view()),
     path('online/', views.OnlineUsersView.as_view()),
 ]

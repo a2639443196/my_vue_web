@@ -40,7 +40,38 @@ export const api = {
       const response = await fetch(url, config)
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        let errorMessage = `HTTP error! status: ${response.status}`
+        try {
+          const data = await response.json()
+          if (typeof data === 'string') {
+            errorMessage = data
+          } else if (data.detail) {
+            errorMessage = data.detail
+          } else {
+            errorMessage = Object.entries(data)
+              .map(([key, value]) => {
+                if (Array.isArray(value)) {
+                  return value.join('\n')
+                }
+                if (typeof value === 'string') {
+                  return value
+                }
+                return `${key}: ${JSON.stringify(value)}`
+              })
+              .join('\n')
+          }
+        } catch {
+          try {
+            errorMessage = await response.text()
+          } catch {
+            // ignore and keep default message
+          }
+        }
+        throw new Error(errorMessage || `HTTP error! status: ${response.status}`)
+      }
+
+      if (response.status === 204) {
+        return null
       }
 
       return await response.json()
@@ -93,4 +124,15 @@ export const chatApi = {
   getMessages: (roomId: string) => api.get(`/chat/rooms/${roomId}/messages`),
   sendMessage: (roomId: string, message: any) => api.post(`/chat/rooms/${roomId}/messages`, message),
   getRooms: () => api.get('/chat/rooms'),
+  getDefaultRoom: () => api.get('/chat/rooms/default/'),
+  getDefaultMessages: (params: { page?: number; page_size?: number } = {}) => {
+    const query = new URLSearchParams()
+    if (params.page) query.append('page', String(params.page))
+    if (params.page_size) query.append('page_size', String(params.page_size))
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return api.get(`/chat/rooms/default/messages/${suffix}`)
+  },
+  postDefaultMessage: (payload: { content: string; message_type?: string }) =>
+    api.post('/chat/rooms/default/messages/', payload),
+  getOnlineUsers: () => api.get('/chat/online/'),
 }

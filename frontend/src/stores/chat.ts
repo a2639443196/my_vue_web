@@ -1,247 +1,238 @@
-import { defineStore, storeToRefs } from 'pinia'
-import { ref, computed, readonly, watch } from 'vue'
+import { defineStore } from 'pinia'
+import { ref, computed, watch } from 'vue'
 import type { ChatMessage, ChatPresence } from '@/types/chat'
+import { chatApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
-const CHANNEL_NAME = 'yanzu-chat-channel'
-const MESSAGES_KEY = 'yanzu-chat-messages'
-const PRESENCE_INTERVAL = 5000
-const PRESENCE_TIMEOUT = 15000
+const MAX_MESSAGES = 200
 
-const companions: ChatPresence[] = [
-  {
-    id: 'companion-yanzu',
-    name: '彦祖小助手',
-    status: 'online',
-    lastActive: new Date().toISOString()
-  },
-  {
-    id: 'companion-focus',
-    name: '专注训练官',
-    status: 'online',
-    lastActive: new Date().toISOString()
+const buildWsUrl = (path: string, token?: string | null) => {
+  const base = import.meta.env.VITE_WS_URL || window.location.origin.replace(/^http/, 'ws')
+  let url = `${base}${path}`
+  if (token) {
+    const separator = url.includes('?') ? '&' : '?'
+    url += `${separator}token=${token}`
   }
-]
-
-const generateId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2)
-
-const loadMessages = (): ChatMessage[] => {
-  if (typeof localStorage === 'undefined') return []
-  const raw = localStorage.getItem(MESSAGES_KEY)
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as ChatMessage[]
-    return parsed
-  } catch (error) {
-    console.error('Failed to parse chat messages', error)
-    return []
-  }
+  return url
 }
 
-const persistMessages = (messages: ChatMessage[]) => {
-  if (typeof localStorage === 'undefined') return
-  localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages))
-}
-
-const supportsBroadcast = typeof window !== 'undefined' && 'BroadcastChannel' in window
+const normalizeMessage = (payload: any): ChatMessage => ({
+  id: payload.id ?? payload.message_id ?? crypto.randomUUID(),
+  userId: payload.user?.id ?? payload.user_id ?? 'system',
+  username: payload.user?.username ?? payload.username ?? '系统',
+  avatar: payload.user?.avatar ?? payload.avatar ?? null,
+  content: payload.content,
+  createdAt: payload.created_at ?? payload.createdAt ?? new Date().toISOString(),
+  messageType: payload.message_type ?? (payload.isSystem ? 'system' : 'text'),
+  isSystem: payload.message_type === 'system' || payload.isSystem === true
+})
 
 export const useChatStore = defineStore('chat', () => {
   const userStore = useUserStore()
-  const { user } = storeToRefs(userStore)
 
-  const messages = ref<ChatMessage[]>(loadMessages())
+  const room = ref<{ id: number; name: string } | null>(null)
+  const messages = ref<ChatMessage[]>([])
   const onlineUsers = ref<ChatPresence[]>([])
-  const initialized = ref(false)
+  const connecting = ref(false)
+  const presenceConnecting = ref(false)
+  const error = ref<string | null>(null)
 
-  let channel: BroadcastChannel | null = null
-  let presenceTimer: number | null = null
+  let chatSocket: WebSocket | null = null
+  let presenceSocket: WebSocket | null = null
+  let reconnectTimer: number | null = null
+  let presenceReconnectTimer: number | null = null
 
-  const ensureSystemWelcome = () => {
-    if (messages.value.length === 0) {
-      addSystemMessage('欢迎来到彦祖的导航站聊天室，和大家打个招呼吧！')
+  const sortMessages = () => {
+    messages.value = [...messages.value]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(-MAX_MESSAGES)
+  }
+
+  const prependHistory = (history: ChatMessage[]) => {
+    messages.value = [...history, ...messages.value]
+    sortMessages()
+  }
+
+  const appendMessage = (message: ChatMessage) => {
+    messages.value = [...messages.value, message]
+    sortMessages()
+  }
+
+  const fetchRoom = async () => {
+    if (room.value) return room.value
+    const data = await chatApi.getDefaultRoom()
+    room.value = data
+    return room.value
+  }
+
+  const fetchMessages = async () => {
+    const response = await chatApi.getDefaultMessages({ page_size: 100 })
+    const normalized = response.results
+      .map((item: any) => normalizeMessage({
+        id: item.id,
+        content: item.content,
+        message_type: item.message_type,
+        created_at: item.created_at,
+        user: item.user_info
+      }))
+      .reverse()
+    prependHistory(normalized)
+  }
+
+  const handleChatMessage = (event: MessageEvent) => {
+    const payload = JSON.parse(event.data)
+    switch (payload.type) {
+      case 'chat_message':
+        appendMessage(normalizeMessage(payload.message))
+        break
+      case 'system_event':
+        appendMessage(normalizeMessage({
+          id: `sys-${payload.event}-${Date.now()}`,
+          content: payload.message,
+          message_type: 'system',
+          created_at: new Date().toISOString(),
+          user: { id: 'system', username: '系统' }
+        }))
+        break
+      case 'error':
+        error.value = payload.message
+        break
+      default:
+        break
     }
   }
 
-  const broadcast = (type: string, payload: any) => {
-    if (!supportsBroadcast) return
-    if (!channel) {
-      channel = new BroadcastChannel(CHANNEL_NAME)
-      channel.onmessage = handleChannelMessage
+  const handlePresenceMessage = (event: MessageEvent) => {
+    const payload = JSON.parse(event.data)
+    if (payload.type === 'online_users') {
+      onlineUsers.value = payload.users
+      return
     }
-    channel.postMessage({ type, payload })
-  }
-
-  const handleChannelMessage = (event: MessageEvent) => {
-    const { type, payload } = event.data as { type: string; payload: any }
-    if (type === 'message') {
-      if (messages.value.some(message => message.id === payload.id)) return
-      messages.value.push(payload)
-      messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      persistMessages(messages.value)
+    if (payload.type === 'user_online') {
+      const existing = onlineUsers.value.filter(user => user.id !== payload.user.id)
+      onlineUsers.value = [...existing, payload.user]
+      return
     }
-
-    if (type === 'presence') {
-      updatePresence(payload)
+    if (payload.type === 'user_offline') {
+      onlineUsers.value = onlineUsers.value.filter(user => user.id !== payload.user_id)
     }
   }
 
-  const updatePresence = (presence: ChatPresence) => {
-    const now = Date.now()
-    const list = onlineUsers.value.filter(user => now - new Date(user.lastActive).getTime() < PRESENCE_TIMEOUT)
-    const index = list.findIndex(item => item.id === presence.id)
-    if (index !== -1) {
-      list[index] = { ...presence }
-    } else {
-      list.push({ ...presence })
+  const connectChatSocket = () => {
+    if (!userStore.token) return
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) return
+    connecting.value = true
+    error.value = null
+    chatSocket = new WebSocket(buildWsUrl('/ws/chat/', userStore.token))
+    chatSocket.onopen = () => {
+      connecting.value = false
     }
-    onlineUsers.value = list
+    chatSocket.onmessage = handleChatMessage
+    chatSocket.onerror = () => {
+      error.value = '聊天室连接异常'
+    }
+    chatSocket.onclose = () => {
+      connecting.value = false
+      scheduleReconnect()
+    }
   }
 
-  const prunePresence = () => {
-    const now = Date.now()
-    onlineUsers.value = onlineUsers.value.filter(
-      presence => now - new Date(presence.lastActive).getTime() < PRESENCE_TIMEOUT
-    )
+  const connectPresenceSocket = () => {
+    if (!userStore.token) return
+    if (presenceSocket && presenceSocket.readyState === WebSocket.OPEN) return
+    presenceConnecting.value = true
+    presenceSocket = new WebSocket(buildWsUrl('/ws/online/', userStore.token))
+    presenceSocket.onopen = () => {
+      presenceConnecting.value = false
+    }
+    presenceSocket.onmessage = handlePresenceMessage
+    presenceSocket.onclose = () => {
+      presenceConnecting.value = false
+      schedulePresenceReconnect()
+    }
   }
 
-  const addSystemMessage = (content: string) => {
-    const message: ChatMessage = {
-      id: generateId(),
-      authorId: 'system',
-      authorName: '系统',
-      content,
-      createdAt: new Date().toISOString(),
-      isSystem: true
-    }
-    messages.value.push(message)
-    messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    persistMessages(messages.value)
-    broadcast('message', message)
+  const scheduleReconnect = () => {
+    if (reconnectTimer) return
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = null
+      connectChatSocket()
+    }, 2000)
   }
 
-  const sendMessage = (content: string) => {
-    const trimmed = content.trim()
-    if (!trimmed) return
-
-    const authorId = user.value?.id ?? 'guest'
-    const authorName = user.value?.username ?? '游客'
-
-    const message: ChatMessage = {
-      id: generateId(),
-      authorId,
-      authorName,
-      content: trimmed,
-      createdAt: new Date().toISOString()
-    }
-
-    messages.value.push(message)
-    messages.value.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    persistMessages(messages.value)
-    broadcast('message', message)
-    scheduleCompanionReply(message)
+  const schedulePresenceReconnect = () => {
+    if (presenceReconnectTimer) return
+    presenceReconnectTimer = window.setTimeout(() => {
+      presenceReconnectTimer = null
+      connectPresenceSocket()
+    }, 3000)
   }
 
-  const scheduleCompanionReply = (message: ChatMessage) => {
-    if (message.authorId === 'system') return
-    const replies = [
-      '保持水分，健康每一天！',
-      '记得也去玩玩小游戏放松一下～',
-      '今天的目标完成了吗？坚持就是胜利！',
-      '好消息要记得打卡分享给大家哦！'
-    ]
-    const reply = replies[Math.floor(Math.random() * replies.length)]
-    setTimeout(() => {
-      addSystemMessage(reply)
-    }, 1500 + Math.random() * 2000)
-  }
-
-  const announcePresence = (status: 'online' | 'away' = 'online') => {
-    if (!user.value) return
-    const presence: ChatPresence = {
-      id: user.value.id,
-      name: user.value.username,
-      avatar: user.value.avatar,
-      status,
-      lastActive: new Date().toISOString()
-    }
-    updatePresence(presence)
-    broadcast('presence', presence)
-  }
-
-  const initialize = () => {
-    if (initialized.value) return
-    ensureSystemWelcome()
-
-    if (supportsBroadcast) {
-      channel = new BroadcastChannel(CHANNEL_NAME)
-      channel.onmessage = handleChannelMessage
-    }
-
-    companions.forEach(companion =>
-      updatePresence({ ...companion, lastActive: new Date().toISOString() })
-    )
-
-    announcePresence()
-
-    if (typeof window !== 'undefined') {
-      presenceTimer = window.setInterval(() => {
-        prunePresence()
-        announcePresence()
-        companions.forEach(companion =>
-          updatePresence({ ...companion, lastActive: new Date().toISOString() })
-        )
-      }, PRESENCE_INTERVAL)
-
-      window.addEventListener('beforeunload', () => announcePresence('away'))
-    }
-
-    initialized.value = true
+  const initialize = async () => {
+    if (!userStore.isAuthenticated) return
+    await fetchRoom()
+    await fetchMessages()
+    connectChatSocket()
+    connectPresenceSocket()
   }
 
   const dispose = () => {
-    if (channel) {
-      channel.close()
-      channel = null
+    chatSocket?.close()
+    presenceSocket?.close()
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
     }
-    if (presenceTimer) {
-      clearInterval(presenceTimer)
-      presenceTimer = null
+    if (presenceReconnectTimer) {
+      clearTimeout(presenceReconnectTimer)
+      presenceReconnectTimer = null
     }
+    messages.value = []
+    onlineUsers.value = []
+    room.value = null
+  }
+
+  const activeRoomId = computed(() => room.value?.id ?? 'global')
+
+  const sendMessage = (content: string) => {
+    if (!content.trim()) return
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+      throw new Error('聊天室尚未连接')
+    }
+    chatSocket.send(JSON.stringify({
+      type: 'chat_message',
+      room_id: activeRoomId.value,
+      content: content.trim()
+    }))
+  }
+
+  const fetchOnlineUsers = async () => {
+    if (!userStore.token) return
+    const data = await chatApi.getOnlineUsers()
+    onlineUsers.value = data.users
   }
 
   watch(
-    () => user.value?.id,
-    () => {
-      announcePresence()
+    () => userStore.token,
+    token => {
+      if (token) {
+        initialize()
+      } else {
+        dispose()
+      }
     }
   )
 
-  const orderedMessages = computed(() =>
-    [...messages.value].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    )
-  )
-
-  const recentMessages = computed(() => orderedMessages.value.slice(-100))
-
   return {
-    // State
-    messages: readonly(messages),
-    onlineUsers: readonly(onlineUsers),
-    initialized: readonly(initialized),
-
-    // Getters
-    orderedMessages,
-    recentMessages,
-
-    // Actions
+    room: computed(() => room.value),
+    messages,
+    onlineUsers,
+    connecting,
+    presenceConnecting,
+    error,
     initialize,
     dispose,
     sendMessage,
-    addSystemMessage,
-    announcePresence
+    fetchOnlineUsers
   }
 })

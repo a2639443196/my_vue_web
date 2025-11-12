@@ -12,6 +12,26 @@ from .serializers import (
 )
 
 User = get_user_model()
+DEFAULT_ROOM_NAME = 'Wellness Hub Lounge'
+
+
+def ensure_default_room(user):
+    """Ensure the global lounge room exists and the user is a member."""
+    room, _ = ChatRoom.objects.get_or_create(
+        name=DEFAULT_ROOM_NAME,
+        defaults={
+            'description': '全站公共聊天室',
+            'is_public': True,
+            'created_by': user,
+            'max_members': 1000
+        }
+    )
+    ChatRoomMember.objects.get_or_create(
+        room=room,
+        user=user,
+        defaults={'role': 'member'}
+    )
+    return room
 
 
 class ChatRoomViewSet(viewsets.ModelViewSet):
@@ -142,17 +162,77 @@ class ChatMessageListView(APIView):
             return Response({'error': '聊天室不存在'}, status=404)
 
 
+class DefaultChatRoomView(APIView):
+    """Ensure and return the default global chat room."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        room = ensure_default_room(request.user)
+        serializer = ChatRoomSerializer(room, context={'request': request})
+        return Response(serializer.data)
+
+
+class DefaultChatMessagesView(APIView):
+    """Return paginated messages for the default room."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        room = ensure_default_room(request.user)
+        messages_qs = room.messages.filter(is_deleted=False).order_by('-created_at')
+
+        page_size = int(request.GET.get('page_size', 50))
+        page = int(request.GET.get('page', 1))
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        serializer = ChatMessageSerializer(messages_qs[start:end], many=True, context={'request': request})
+        return Response({
+            'results': serializer.data,
+            'count': messages_qs.count(),
+            'next': page + 1 if end < messages_qs.count() else None,
+            'previous': page - 1 if page > 1 else None
+        })
+
+    def post(self, request):
+        room = ensure_default_room(request.user)
+        content = request.data.get('content')
+        message_type = request.data.get('message_type', 'text')
+
+        if not content:
+            return Response({'error': '消息内容不能为空'}, status=400)
+
+        message = ChatMessage.objects.create(
+            room=room,
+            user=request.user,
+            content=content,
+            message_type=message_type
+        )
+        serializer = ChatMessageSerializer(message, context={'request': request})
+        return Response(serializer.data, status=201)
+
+
 class OnlineUsersView(APIView):
     """Online users view."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         """Get online users list."""
-        online_users = User.objects.filter(is_online=True).annotate(
-            room_count=Count('joined_rooms', filter=Q(joined_rooms__is_online=True))
-        ).values('id', 'username', 'avatar', 'room_count')
+        online_records = OnlineUser.objects.select_related('user').order_by('-last_seen')
 
+        def serialize(record):
+            avatar_url = None
+            if record.user.avatar:
+                avatar_url = request.build_absolute_uri(record.user.avatar.url)
+            return {
+                'id': record.user.id,
+                'username': record.user.username,
+                'avatar': avatar_url,
+                'last_active': record.last_seen.isoformat(),
+                'status': 'online'
+            }
+
+        data = [serialize(item) for item in online_records]
         return Response({
-            'users': list(online_users),
-            'total_count': online_users.count()
+            'users': data,
+            'total_count': len(data)
         })

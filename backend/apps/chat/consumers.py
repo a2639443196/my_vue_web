@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .models import ChatRoom, ChatMessage, ChatRoomMember, OnlineUser
 
+DEFAULT_ROOM_NAME = 'Wellness Hub Lounge'
+
 User = get_user_model()
 
 
@@ -18,29 +20,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.room_group_name = f"chat_{self.user.id}"
+        self.room = await self.get_or_create_room('global')
+        if not self.room:
+            await self.close()
+            return
 
-        # Join room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+        self.room_group_name = self.get_room_group_name(self.room)
 
-        # Track user as online
-        await self.track_user_online()
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.add_to_room(self.room, self.user)
+        await self.track_user_online(self.room)
+        await self.broadcast_online_status('user_online')
 
         await self.accept()
+        await self.broadcast_system_event('join')
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
-        # Leave room group
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-
-        # Track user as offline
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         await self.track_user_offline()
+        await self.broadcast_system_event('leave')
 
     async def receive(self, text_data):
         """Handle received WebSocket message."""
@@ -63,7 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def handle_chat_message(self, data):
         """Handle chat message."""
-        room_id = data.get('room_id')
+        room_id = data.get('room_id') or 'global'
         content = data.get('content')
         message_type = data.get('message_type', 'text')
 
@@ -71,8 +71,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send_error('Room ID and content are required')
             return
 
-        # Get or create room
-        room = await self.get_or_create_room(room_id)
+        room = await self.resolve_room(room_id)
         if not room:
             await self.send_error('Room not found')
             return
@@ -86,9 +85,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Save message
         message = await self.save_message(room, self.user, content, message_type)
 
-        # Broadcast message to room
+        room_group = self.get_room_group_name(room)
+
         await self.channel_layer.group_send(
-            f"room_{room_id}",
+            room_group,
             {
                 'type': 'chat_message',
                 'message': {
@@ -111,12 +111,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room_id = data.get('room_id')
         is_typing = data.get('is_typing', False)
 
-        if not room_id:
+        room = await self.resolve_room(room_id)
+        if not room:
             return
 
-        # Broadcast typing status to room
+        room_group = self.get_room_group_name(room)
+
         await self.channel_layer.group_send(
-            f"room_{room_id}",
+            room_group,
             {
                 'type': 'typing',
                 'user': {
@@ -124,17 +126,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'username': self.user.username
                 },
                 'is_typing': is_typing,
-                'room_id': room_id
+                'room_id': room.id
             }
         )
 
     async def handle_join_room(self, data):
         """Handle joining a room."""
-        room_id = data.get('room_id')
-        if not room_id:
-            return
-
-        room = await self.get_room(room_id)
+        room = await self.resolve_room(data.get('room_id'))
         if not room:
             return
 
@@ -142,25 +140,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.add_to_room(room, self.user)
 
         # Broadcast user joined
+        room_group = self.get_room_group_name(room)
         await self.channel_layer.group_send(
-            f"room_{room_id}",
+            room_group,
             {
                 'type': 'user_joined',
                 'user': {
                     'id': self.user.id,
                     'username': self.user.username
                 },
-                'room_id': room_id
+                'room_id': room.id
             }
         )
 
     async def handle_leave_room(self, data):
         """Handle leaving a room."""
-        room_id = data.get('room_id')
-        if not room_id:
-            return
-
-        room = await self.get_room(room_id)
+        room = await self.resolve_room(data.get('room_id'))
         if not room:
             return
 
@@ -168,17 +163,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.remove_from_room(room, self.user)
 
         # Broadcast user left
+        room_group = self.get_room_group_name(room)
         await self.channel_layer.group_send(
-            f"room_{room_id}",
+            room_group,
             {
                 'type': 'user_left',
                 'user': {
                     'id': self.user.id,
                     'username': self.user.username
                 },
-                'room_id': room_id
+                'room_id': room.id
             }
         )
+
+    async def broadcast_system_event(self, action: str):
+        """Broadcast join/leave events to the room and online users channel."""
+        payload = {
+            'id': self.user.id,
+            'username': self.user.username,
+            'avatar': self.user.avatar.url if self.user.avatar else None
+        }
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'system_event',
+                'event': action,
+                'user': payload,
+                'message': f"{self.user.username} {'加入' if action == 'join' else '离开'}聊天室"
+            }
+        )
+
+    async def system_event(self, event):
+        """Forward system events to clients."""
+        await self.send(text_data=json.dumps({
+            'type': 'system_event',
+            'event': event['event'],
+            'user': event['user'],
+            'message': event['message']
+        }))
 
     async def chat_message(self, event):
         """Send chat message to WebSocket."""
@@ -220,42 +242,76 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
 
     @database_sync_to_async
-    def track_user_online(self):
+    def track_user_online(self, room):
         """Track user as online."""
         OnlineUser.objects.update_or_create(
             user=self.user,
             defaults={
                 'channel_name': self.channel_name,
-                'last_seen': timezone.now()
+                'last_seen': timezone.now(),
+                'current_room': room
             }
         )
         self.user.is_online = True
         self.user.save(update_fields=['is_online'])
 
     @database_sync_to_async
-    def track_user_offline(self):
+    def clear_online_record(self):
+        OnlineUser.objects.filter(user=self.user).delete()
+
+    async def track_user_offline(self):
         """Track user as offline."""
-        OnlineUser.objects.filter(
-            user=self.user,
-            channel_name=self.channel_name
-        ).delete()
+        await self.clear_online_record()
+        await self.mark_user_offline()
+        await self.broadcast_online_status('user_offline')
+
+    @database_sync_to_async
+    def mark_user_offline(self):
         self.user.is_online = False
         self.user.save(update_fields=['is_online'])
+        ChatRoomMember.objects.filter(user=self.user).update(is_online=False)
+
+    @database_sync_to_async
+    def get_presence_payload(self):
+        avatar = self.user.avatar.url if self.user.avatar else None
+        return {
+            'id': self.user.id,
+            'username': self.user.username,
+            'avatar': avatar,
+            'last_active': timezone.now().isoformat()
+        }
+
+    async def broadcast_online_status(self, event_type: str):
+        payload = await self.get_presence_payload()
+        await self.channel_layer.group_send(
+            "online_users",
+            {
+                'type': event_type,
+                'user': payload,
+                'user_id': payload['id']
+            }
+        )
 
     @database_sync_to_async
     def get_or_create_room(self, room_id):
         """Get or create chat room."""
         if room_id == 'global':
             room, created = ChatRoom.objects.get_or_create(
-                name='Global Chat',
+                name=DEFAULT_ROOM_NAME,
                 defaults={
-                    'description': 'Global chat room for all users',
+                    'description': '全站公共聊天室',
                     'is_public': True,
                     'created_by': self.user
                 }
             )
             return room
         return ChatRoom.objects.filter(id=room_id).first()
+
+    async def resolve_room(self, room_id):
+        """Resolve various room identifiers to actual ChatRoom instances."""
+        if not room_id or room_id == 'global':
+            return await self.get_or_create_room('global')
+        return await self.get_room(room_id)
 
     @database_sync_to_async
     def get_room(self, room_id):
@@ -297,6 +353,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             content=content,
             message_type=message_type
         )
+
+    def get_room_group_name(self, room):
+        return f"room_{room.id}"
 
 
 class OnlineUsersConsumer(AsyncWebsocketConsumer):
@@ -346,12 +405,17 @@ class OnlineUsersConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_online_users(self):
         """Get list of online users."""
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-        return list(
-            User.objects.filter(is_online=True)
-            .values('id', 'username', 'avatar')
-        )
+        records = OnlineUser.objects.select_related('user').order_by('-last_seen')
+        return [
+            {
+                'id': record.user.id,
+                'username': record.user.username,
+                'avatar': record.user.avatar.url if record.user.avatar else None,
+                'last_active': record.last_seen.isoformat(),
+                'status': 'online'
+            }
+            for record in records
+        ]
 
     async def send_online_users(self):
         """Send online users list."""

@@ -1,123 +1,187 @@
 import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { format } from 'date-fns'
+import { api } from '@/api'
 import type {
-  StoredUser,
+  CombinedUser,
+  LocalUserData,
   LoginCredentials,
   RegisterData,
   ProfileUpdateData,
   HydrationEntry,
   GameRecord,
   GameKey,
-  OperationRecord
+  OperationRecord,
+  StoredUser
 } from '@/types/user'
 
-const USERS_KEY = 'yanzu-nav-users'
-const SESSION_KEY = 'yanzu-nav-session'
+const TOKEN_KEY = 'yanzu-nav-token'
+const PROFILE_CACHE_KEY = 'yanzu-nav-profile'
+const LOCAL_DATA_KEY = 'yanzu-nav-local-data'
+const LEGACY_USERS_KEY = 'yanzu-nav-users'
+const LEGACY_SESSION_KEY = 'yanzu-nav-session'
 
 const generateId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2)
 
-const hashPassword = (password: string) =>
-  typeof btoa !== 'undefined'
-    ? btoa(unescape(encodeURIComponent(password)))
-    : password
+const defaultLocalData = (): LocalUserData => {
+  const now = new Date().toISOString()
+  return {
+    hydrationTarget: 2000,
+    hydrationLog: {},
+    gameRecords: [],
+    operations: [],
+    createdAt: now,
+    updatedAt: now
+  }
+}
 
-const verifyPassword = (hash: string, password: string) => hash === hashPassword(password)
+const loadLocalData = (): Record<string, LocalUserData> => {
+  if (typeof localStorage === 'undefined') return {}
+  try {
+    const stored = localStorage.getItem(LOCAL_DATA_KEY)
+    return stored ? JSON.parse(stored) : {}
+  } catch (error) {
+    console.error('Failed to parse local hydration data', error)
+    return {}
+  }
+}
 
-const cloneUser = (user: StoredUser): StoredUser => JSON.parse(JSON.stringify(user))
+const migrateLegacyData = (target: Record<string, LocalUserData>) => {
+  if (typeof localStorage === 'undefined') return
+  const legacy = localStorage.getItem(LEGACY_USERS_KEY)
+  if (!legacy) return
+
+  try {
+    const parsed = JSON.parse(legacy) as Array<Record<string, any>>
+    parsed.forEach(entry => {
+      if (!entry?.username) return
+      target[entry.username] = {
+        hydrationTarget: entry.hydrationTarget ?? 2000,
+        hydrationLog: entry.hydrationLog ?? {},
+        gameRecords: entry.gameRecords ?? [],
+        operations: entry.operations ?? [],
+        createdAt: entry.createdAt ?? new Date().toISOString(),
+        updatedAt: entry.updatedAt ?? new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    console.error('Failed to migrate legacy user data', error)
+  } finally {
+    localStorage.removeItem(LEGACY_USERS_KEY)
+    localStorage.removeItem(LEGACY_SESSION_KEY)
+  }
+}
 
 export const useUserStore = defineStore('user', () => {
-  const users = ref<StoredUser[]>([])
-  const user = ref<StoredUser | null>(null)
+  const profile = ref<StoredUser | null>(null)
   const token = ref<string | null>(null)
   const initialized = ref(false)
   const loading = ref(false)
+  const localData = ref<Record<string, LocalUserData>>(loadLocalData())
 
-  const persistUsers = () => {
+  if (Object.keys(localData.value).length === 0) {
+    migrateLegacyData(localData.value)
+  }
+
+  const persistLocalData = () => {
     if (typeof localStorage === 'undefined') return
-    localStorage.setItem(USERS_KEY, JSON.stringify(users.value))
+    localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(localData.value))
   }
 
   const persistSession = () => {
     if (typeof localStorage === 'undefined') return
-    if (user.value && token.value) {
-      localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({ userId: user.value.id, token: token.value })
-      )
+    if (token.value) {
+      localStorage.setItem(TOKEN_KEY, token.value)
+      if (profile.value) {
+        localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile.value))
+      }
     } else {
-      localStorage.removeItem(SESSION_KEY)
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(PROFILE_CACHE_KEY)
     }
   }
 
-  const loadPersisted = () => {
-    if (typeof localStorage === 'undefined') return
-    const storedUsers = localStorage.getItem(USERS_KEY)
-    if (storedUsers) {
-      try {
-        const parsed: StoredUser[] = JSON.parse(storedUsers)
-        users.value = parsed.map(cloneUser)
-      } catch (error) {
-        console.error('Failed to parse stored users', error)
-        users.value = []
-      }
+  const ensureLocalSlot = (username?: string | null) => {
+    if (!username) return defaultLocalData()
+    if (!localData.value[username]) {
+      localData.value[username] = defaultLocalData()
+      persistLocalData()
     }
-
-    const storedSession = localStorage.getItem(SESSION_KEY)
-    if (storedSession) {
-      try {
-        const session = JSON.parse(storedSession) as { userId: string; token: string }
-        const existing = users.value.find(u => u.id === session.userId)
-        if (existing) {
-          user.value = cloneUser(existing)
-          token.value = session.token
-        }
-      } catch (error) {
-        console.error('Failed to parse stored session', error)
-      }
-    }
+    return localData.value[username]
   }
 
-  const updateUser = (updated: StoredUser) => {
-    const index = users.value.findIndex(u => u.id === updated.id)
-    if (index !== -1) {
-      users.value[index] = cloneUser(updated)
-      user.value = cloneUser(updated)
-      persistUsers()
-      persistSession()
+  const currentUser = computed<CombinedUser | null>(() => {
+    if (!profile.value) return null
+    const slot = ensureLocalSlot(profile.value.username)
+    return { ...profile.value, ...slot }
+  })
+
+  const requireLocalSlot = () => {
+    if (!profile.value?.username) {
+      throw new Error('用户未登录')
     }
+    return ensureLocalSlot(profile.value.username)
+  }
+
+  const clearSession = () => {
+    token.value = null
+    profile.value = null
+    api.clearAuthToken()
+    persistSession()
+  }
+
+  const fetchProfile = async () => {
+    const data = await api.get('/auth/profile/')
+    ensureLocalSlot(data.username)
+    profile.value = data
+    persistSession()
   }
 
   const initialize = async () => {
     if (initialized.value) return
-    loadPersisted()
+    if (typeof localStorage !== 'undefined') {
+      const storedToken = localStorage.getItem(TOKEN_KEY)
+      if (storedToken) {
+        token.value = storedToken
+        api.setAuthToken(storedToken)
+        try {
+          await fetchProfile()
+        } catch (error) {
+          console.error('Failed to restore profile', error)
+          clearSession()
+        }
+      } else {
+        const cachedProfile = localStorage.getItem(PROFILE_CACHE_KEY)
+        if (cachedProfile) {
+          try {
+            const parsed = JSON.parse(cachedProfile)
+            profile.value = parsed
+          } catch (error) {
+            console.error('Failed to parse cached profile', error)
+          }
+        }
+      }
+    }
     initialized.value = true
   }
 
   const login = async (credentials: LoginCredentials) => {
     loading.value = true
     try {
-      const { email, password } = credentials
-      const existing = users.value.find(
-        u => u.email.toLowerCase() === email.trim().toLowerCase()
-      )
-
-      if (!existing || !verifyPassword(existing.passwordHash, password)) {
-        throw new Error('邮箱或密码不正确')
+      const payload = {
+        username: credentials.username.trim(),
+        password: credentials.password
       }
-
-      existing.lastLoginAt = new Date().toISOString()
-      existing.updatedAt = existing.lastLoginAt
-
-      user.value = cloneUser(existing)
-      token.value = generateId()
-
-      updateUser(existing)
-
-      return { success: true, user: user.value }
+      const response = await api.post('/auth/login/', payload)
+      token.value = response.token
+      api.setAuthToken(response.token)
+      ensureLocalSlot(response.user.username)
+      profile.value = response.user
+      persistSession()
+      return { success: true, user: profile.value }
     } catch (error: any) {
       throw new Error(error.message || '登录失败，请稍后重试')
     } finally {
@@ -132,38 +196,21 @@ export const useUserStore = defineStore('user', () => {
         throw new Error('两次输入的密码不一致')
       }
 
-      if (users.value.some(u => u.email.toLowerCase() === data.email.toLowerCase())) {
-        throw new Error('该邮箱已被注册')
-      }
-
-      if (users.value.some(u => u.username === data.username)) {
-        throw new Error('用户名已存在')
-      }
-
-      const now = new Date().toISOString()
-
-      const newUser: StoredUser = {
-        id: generateId(),
-        email: data.email.trim(),
+      const payload = {
         username: data.username.trim(),
-        passwordHash: hashPassword(data.password),
-        hydrationTarget: 2000,
-        hydrationLog: {},
-        gameRecords: [],
-        operations: [],
-        createdAt: now,
-        updatedAt: now,
-        lastLoginAt: now
+        phone: data.phone.trim(),
+        email: data.email?.trim() || '',
+        password: data.password,
+        password_confirm: data.confirmPassword
       }
 
-      users.value.push(cloneUser(newUser))
-      user.value = cloneUser(newUser)
-      token.value = generateId()
-
-      persistUsers()
+      const response = await api.post('/auth/register/', payload)
+      token.value = response.token
+      api.setAuthToken(response.token)
+      ensureLocalSlot(response.user.username)
+      profile.value = response.user
       persistSession()
-
-      return { success: true, user: user.value }
+      return { success: true, user: profile.value }
     } catch (error: any) {
       throw new Error(error.message || '注册失败，请稍后重试')
     } finally {
@@ -172,22 +219,33 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const logout = async () => {
-    user.value = null
-    token.value = null
-    persistSession()
+    try {
+      await api.post('/auth/logout/', {})
+    } catch {
+      // Ignore API errors on logout
+    }
+    clearSession()
   }
 
-  const clearAuth = () => {
-    user.value = null
-    token.value = null
+  const updateProfile = async (data: ProfileUpdateData) => {
+    if (!profile.value) throw new Error('用户未登录')
+    const payload = { ...data }
+    if (!payload.email) delete payload.email
+    if (!payload.phone) delete payload.phone
+
+    const response = await api.put('/auth/profile/', payload)
+    ensureLocalSlot(response.user.username)
+    profile.value = response.user
     persistSession()
+    return { success: true, user: profile.value }
   }
 
   const recordOperation = (
     operation: Omit<OperationRecord, 'id' | 'createdAt'> & { createdAt?: string }
   ) => {
-    if (!user.value) return null
+    if (!profile.value) return null
 
+    const slot = requireLocalSlot()
     const createdAt = operation.createdAt ?? new Date().toISOString()
     const newOperation: OperationRecord = {
       id: generateId(),
@@ -195,19 +253,16 @@ export const useUserStore = defineStore('user', () => {
       ...operation
     }
 
-    const updated: StoredUser = {
-      ...cloneUser(user.value),
-      operations: [newOperation, ...user.value.operations],
-      updatedAt: createdAt
-    }
-
-    updateUser(updated)
+    slot.operations = [newOperation, ...slot.operations]
+    slot.updatedAt = createdAt
+    persistLocalData()
     return newOperation
   }
 
   const logWater = (amount: number, note?: string, recordedAt: Date = new Date()) => {
-    if (!user.value) throw new Error('用户未登录')
+    if (!profile.value) throw new Error('用户未登录')
 
+    const slot = requireLocalSlot()
     const dateKey = format(recordedAt, 'yyyy-MM-dd')
     const entry: HydrationEntry = {
       id: generateId(),
@@ -216,7 +271,7 @@ export const useUserStore = defineStore('user', () => {
       note
     }
 
-    const hydrationLog = { ...user.value.hydrationLog }
+    const hydrationLog = { ...slot.hydrationLog }
     const day = hydrationLog[dateKey]
       ? {
           date: dateKey,
@@ -229,13 +284,9 @@ export const useUserStore = defineStore('user', () => {
     day.total += amount
     hydrationLog[dateKey] = day
 
-    const updated: StoredUser = {
-      ...cloneUser(user.value),
-      hydrationLog,
-      updatedAt: new Date().toISOString()
-    }
-
-    updateUser(updated)
+    slot.hydrationLog = hydrationLog
+    slot.updatedAt = new Date().toISOString()
+    persistLocalData()
 
     recordOperation({
       type: 'water',
@@ -248,21 +299,20 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const updateHydrationTarget = (target: number) => {
-    if (!user.value) return
-    const updated: StoredUser = {
-      ...cloneUser(user.value),
-      hydrationTarget: target,
-      updatedAt: new Date().toISOString()
-    }
-    updateUser(updated)
+    if (!profile.value) return
+    const slot = requireLocalSlot()
+    slot.hydrationTarget = target
+    slot.updatedAt = new Date().toISOString()
+    persistLocalData()
   }
 
   const recordGameResult = (
     game: GameKey,
     data: { score: number; unit: string; summary: string; details?: Record<string, any> }
   ) => {
-    if (!user.value) return null
+    if (!profile.value) return null
 
+    const slot = requireLocalSlot()
     const createdAt = new Date().toISOString()
     const newRecord: GameRecord = {
       id: generateId(),
@@ -274,13 +324,9 @@ export const useUserStore = defineStore('user', () => {
       details: data.details
     }
 
-    const updated: StoredUser = {
-      ...cloneUser(user.value),
-      gameRecords: [newRecord, ...user.value.gameRecords],
-      updatedAt: createdAt
-    }
-
-    updateUser(updated)
+    slot.gameRecords = [newRecord, ...slot.gameRecords]
+    slot.updatedAt = createdAt
+    persistLocalData()
 
     recordOperation({
       type: 'game',
@@ -292,45 +338,17 @@ export const useUserStore = defineStore('user', () => {
     return newRecord
   }
 
-  const updateProfile = async (data: ProfileUpdateData) => {
-    if (!user.value) throw new Error('用户未登录')
-
-    if (data.email && users.value.some(u => u.email === data.email && u.id !== user.value!.id)) {
-      throw new Error('该邮箱已被其他用户使用')
-    }
-
-    if (
-      data.username &&
-      users.value.some(u => u.username === data.username && u.id !== user.value!.id)
-    ) {
-      throw new Error('该用户名已被占用')
-    }
-
-    const updated: StoredUser = {
-      ...cloneUser(user.value),
-      email: data.email?.trim() ?? user.value.email,
-      username: data.username?.trim() ?? user.value.username,
-      avatar: data.avatar?.trim() || user.value.avatar,
-      hydrationTarget: data.hydrationTarget ?? user.value.hydrationTarget,
-      updatedAt: new Date().toISOString()
-    }
-
-    updateUser(updated)
-
-    return { success: true, user: user.value }
-  }
-
-  const hydrationTarget = computed(() => user.value?.hydrationTarget ?? 2000)
+  const hydrationTarget = computed(() => currentUser.value?.hydrationTarget ?? 2000)
 
   const todayHydration = computed(() => {
-    if (!user.value) return 0
+    if (!currentUser.value) return 0
     const dateKey = format(new Date(), 'yyyy-MM-dd')
-    return user.value.hydrationLog[dateKey]?.total ?? 0
+    return currentUser.value.hydrationLog[dateKey]?.total ?? 0
   })
 
-  const hydrationHistory = computed(() => user.value?.hydrationLog ?? {})
-  const operations = computed(() => user.value?.operations ?? [])
-  const gameRecords = computed(() => user.value?.gameRecords ?? [])
+  const hydrationHistory = computed(() => currentUser.value?.hydrationLog ?? {})
+  const operations = computed(() => currentUser.value?.operations ?? [])
+  const gameRecords = computed(() => currentUser.value?.gameRecords ?? [])
 
   const bestSchulteRecord = computed(() => {
     const records = gameRecords.value.filter(record => record.game === 'schulte')
@@ -345,19 +363,20 @@ export const useUserStore = defineStore('user', () => {
   })
 
   const hydrationEntries = computed(() => {
-    if (!user.value) return [] as HydrationEntry[]
-    return Object.values(user.value.hydrationLog)
+    if (!currentUser.value) return [] as HydrationEntry[]
+    return Object.values(currentUser.value.hydrationLog)
       .flatMap(day => day.entries)
       .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
   })
 
-  const isAuthenticated = computed(() => !!user.value && !!token.value)
-  const userDisplayName = computed(() => user.value?.username ?? '访客')
-  const userAvatar = computed(() => user.value?.avatar ?? null)
+  const isAuthenticated = computed(() => !!token.value && !!profile.value)
+  const userDisplayName = computed(() => profile.value?.username ?? '访客')
+  const userAvatar = computed(() => profile.value?.avatar_url ?? profile.value?.avatar ?? null)
 
   return {
     // State
-    user: readonly(user),
+    user: currentUser,
+    profile: readonly(profile),
     token: readonly(token),
     initialized: readonly(initialized),
     loading: readonly(loading),
@@ -380,11 +399,11 @@ export const useUserStore = defineStore('user', () => {
     login,
     register,
     logout,
-    clearAuth,
+    updateProfile,
     logWater,
     updateHydrationTarget,
     recordGameResult,
-    updateProfile,
-    recordOperation
+    recordOperation,
+    clearAuth: clearSession
   }
 })

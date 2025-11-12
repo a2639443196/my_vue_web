@@ -17,6 +17,14 @@
             density="comfortable"
             style="max-width: 140px"
           ></v-select>
+          <v-switch
+            v-model="highlightOnClick"
+            label="点击后高亮"
+            inset
+            hide-details
+            color="primary"
+            class="ml-4"
+          ></v-switch>
           <v-btn color="primary" class="ml-3" @click="startGame">
             <v-icon start>mdi-refresh</v-icon>
             重新开始
@@ -33,7 +41,7 @@
               class="grid-cell"
               :class="{
                 correct: completedNumbers.includes(number),
-                next: number === nextNumber
+                next: highlightOnClick && number === nextNumber
               }"
               @click="selectNumber(number)"
             >
@@ -97,10 +105,11 @@ const elapsed = ref(0)
 const timer = ref<number | null>(null)
 const started = ref(false)
 const startTime = ref<number | null>(null)
+const highlightOnClick = ref(true)
 
 const gridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${gridSize.value}, minmax(60px, 1fr))`,
-  gridTemplateRows: `repeat(${gridSize.value}, minmax(60px, 1fr))`
+  gridTemplateColumns: `repeat(${gridSize.value}, 1fr)`,
+  gridTemplateRows: `repeat(${gridSize.value}, 1fr)`
 }))
 
 const bestRecord = computed(() => userStore.bestSchulteRecord)
@@ -229,8 +238,10 @@ startGame()
 }
 
 .grid-cell {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.04);
   border: none;

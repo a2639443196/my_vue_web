@@ -36,6 +36,14 @@ const defaultCards = (): NavigationCard[] => [
     to: '/games'
   },
   {
+    id: 'activity-hub',
+    title: '活动记录',
+    description: '抽烟与摸鱼日志集中管理',
+    icon: 'mdi-notebook-edit-outline',
+    color: '#FF7043',
+    to: '/activities'
+  },
+  {
     id: 'daily-notes',
     title: '每日灵感',
     description: '收集来自社区的灵感与提示',

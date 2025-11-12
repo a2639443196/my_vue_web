@@ -20,7 +20,7 @@
     <v-card class="auth-card" elevation="12">
       <v-card-title class="text-h5 font-weight-bold mb-2">创建新账号</v-card-title>
       <v-card-subtitle class="mb-6 text-medium-emphasis">
-        只需三步，立即加入彦祖的导航站。
+        只需手机号 + 密码三步即可完成注册，告别繁琐邮箱校验。
       </v-card-subtitle>
 
       <v-form @submit.prevent="handleSubmit" ref="formRef">
@@ -33,11 +33,12 @@
         ></v-text-field>
 
         <v-text-field
-          v-model="form.email"
-          label="邮箱"
-          type="email"
-          prepend-inner-icon="mdi-email-outline"
-          :rules="[rules.required, rules.email]"
+          v-model="form.phone"
+          label="手机号"
+          type="tel"
+          inputmode="tel"
+          prepend-inner-icon="mdi-cellphone"
+          :rules="[rules.required, rules.phone]"
           required
         ></v-text-field>
 
@@ -98,14 +99,14 @@ const showPassword = ref(false)
 
 const form = reactive({
   username: '',
-  email: '',
+  phone: '',
   password: '',
   confirmPassword: ''
 })
 
 const rules = {
   required: (value: string) => (!!value && value.length > 0) || '该字段不能为空',
-  email: (value: string) => /.+@.+\..+/.test(value) || '请输入正确的邮箱格式',
+  phone: (value: string) => /^\d{6,15}$/.test(value.replace(/\D/g, '')) || '请输入有效的手机号',
   minLength: (value: string) => value.length >= 6 || '密码长度至少为 6 位',
   minUser: (value: string) => value.length >= 2 || '用户名不少于 2 个字符'
 }
@@ -117,7 +118,13 @@ const handleSubmit = async () => {
   if (!isValid) return
 
   try {
-    await userStore.register({ ...form })
+    await userStore.register({
+      username: form.username.trim(),
+      phone: form.phone.trim(),
+      password: form.password,
+      confirmPassword: form.confirmPassword,
+      email: ''
+    })
     notificationStore.showSuccess('注册成功，已为你自动登录')
     router.replace('/')
   } catch (error: any) {
@@ -130,65 +137,74 @@ const goLogin = () => router.push({ name: 'Login' })
 
 <style scoped>
 .auth-layout {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
+  width: min(1200px, 100%);
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  padding: clamp(1.5rem, 4vw, 4rem);
-  background: radial-gradient(circle at top, rgba(67, 160, 71, 0.18), transparent),
-    radial-gradient(circle at bottom, rgba(47, 136, 255, 0.18), transparent);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(1.5rem, 5vw, 4rem);
+  align-items: center;
 }
 
 .auth-hero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1a1f36;
-  padding: clamp(1rem, 5vw, 4rem);
+  border-radius: 32px;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15), transparent 55%),
+    radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.12), transparent 55%),
+    #ffffff;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.08);
 }
 
 .hero-content {
-  max-width: 460px;
+  max-width: 500px;
 }
 
 .hero-content h1 {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 700;
   margin-bottom: 1rem;
+  color: #064e3b;
 }
 
 .hero-content p {
-  color: rgba(26, 31, 54, 0.7);
+  color: rgba(6, 78, 59, 0.75);
   margin-bottom: 2rem;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .hero-grid {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .hero-grid h3 {
   font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
+  color: #0f172a;
 }
 
 .hero-grid p {
   margin: 0;
-  color: rgba(26, 31, 54, 0.75);
-  line-height: 1.5;
+  color: rgba(15, 23, 42, 0.7);
+  line-height: 1.6;
 }
 
 .auth-card {
-  max-width: 420px;
+  max-width: 440px;
   margin: auto;
-  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  padding: 1.5rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.08);
 }
 
 @media (max-width: 960px) {
   .auth-layout {
     grid-template-columns: 1fr;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
   }
 
   .auth-hero {

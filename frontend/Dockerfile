@@ -3,11 +3,11 @@ FROM node:18-alpine
 WORKDIR /app
 
 # 拷贝依赖文件并安装全部依赖（包括 devDependencies）
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN npm install
 
 # 拷贝前端源码
-COPY frontend/ ./
+COPY . .
 
 EXPOSE 5173
 

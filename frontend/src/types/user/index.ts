@@ -35,36 +35,48 @@ export interface OperationRecord {
 }
 
 export interface StoredUser {
-  id: string
-  email: string
+  id: number
   username: string
-  passwordHash: string
-  avatar?: string
+  email?: string | null
+  phone?: string | null
+  avatar?: string | null
+  avatar_url?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  last_login_at?: string | null
+}
+
+export interface LocalUserData {
   hydrationTarget: number
   hydrationLog: Record<string, HydrationDay>
   gameRecords: GameRecord[]
   operations: OperationRecord[]
   createdAt: string
   updatedAt: string
-  lastLoginAt?: string
 }
 
+export type CombinedUser = StoredUser & LocalUserData
+
 export interface LoginCredentials {
-  email: string
+  username: string
   password: string
 }
 
 export interface RegisterData {
-  email: string
   username: string
+  phone: string
+  email?: string
   password: string
   confirmPassword: string
 }
 
 export interface ProfileUpdateData {
-  email?: string
   username?: string
+  phone?: string
+  email?: string
   avatar?: string
+  first_name?: string
+  last_name?: string
   hydrationTarget?: number
 }
 

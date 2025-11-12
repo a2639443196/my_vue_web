@@ -10,9 +10,7 @@ const Register = () => import('@/views/auth/Register.vue')
 const Profile = () => import('@/views/user/Profile.vue')
 const Dashboard = () => import('@/views/Dashboard.vue')
 const WaterTracker = () => import('@/views/activities/WaterTracker.vue')
-const BowelTracker = () => import('@/views/activities/BowelTracker.vue')
-const SmokingTracker = () => import('@/views/activities/SmokingTracker.vue')
-const SlackTracker = () => import('@/views/activities/SlackTracker.vue')
+const ActivitiesHub = () => import('@/views/activities/ActivitiesHub.vue')
 const ChatRoom = () => import('@/views/chat/ChatRoom.vue')
 const Games = () => import('@/views/games/GamesHub.vue')
 const SchulteGrid = () => import('@/views/games/SchulteGrid.vue')
@@ -48,7 +46,11 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/activities',
         name: 'Activities',
-        redirect: '/dashboard'
+        component: ActivitiesHub,
+        meta: {
+          title: '活动记录',
+          requiresAuth: true
+        }
       },
       {
         path: '/water',
@@ -56,33 +58,6 @@ const routes: RouteRecordRaw[] = [
         component: WaterTracker,
         meta: {
           title: '饮水追踪',
-          requiresAuth: true
-        }
-      },
-      {
-        path: '/bowel',
-        name: 'BowelTracker',
-        component: BowelTracker,
-        meta: {
-          title: '健康记录',
-          requiresAuth: true
-        }
-      },
-      {
-        path: '/smoking',
-        name: 'SmokingTracker',
-        component: SmokingTracker,
-        meta: {
-          title: '戒烟追踪',
-          requiresAuth: true
-        }
-      },
-      {
-        path: '/slack',
-        name: 'SlackTracker',
-        component: SlackTracker,
-        meta: {
-          title: '摸鱼记录',
           requiresAuth: true
         }
       },

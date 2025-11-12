@@ -124,7 +124,7 @@
             <v-card-text class="chat-preview">
               <template v-if="recentMessages.length">
                 <div v-for="message in recentMessages" :key="message.id" class="chat-line">
-                  <span class="author">{{ message.authorName }}：</span>
+                  <span class="author">{{ message.username }}：</span>
                   <span class="content">{{ message.content }}</span>
                   <span class="time">{{ formatShort(message.createdAt) }}</span>
                 </div>
@@ -140,23 +140,18 @@
           <v-card class="card-hover" elevation="4">
             <v-card-title class="d-flex align-center justify-space-between">
               <span>在线用户</span>
-              <v-chip v-if="onlineUsers.length" size="small" color="primary" variant="flat">
+              <v-chip size="small" color="primary" variant="flat">
                 {{ onlineUsers.length }} 人
               </v-chip>
             </v-card-title>
             <v-divider></v-divider>
             <v-card-text class="online-list">
-              <div v-if="onlineUsers.length === 0" class="empty">当前只有你在线，邀请朋友一起来吧。</div>
-              <div v-for="user in onlineUsers" :key="user.id" class="online-item">
-                <v-avatar size="36" color="primary" class="mr-3">
-                  <span v-if="!user.avatar">{{ user.name.slice(0, 1).toUpperCase() }}</span>
-                  <img v-else :src="user.avatar" :alt="user.name" />
-                </v-avatar>
-                <div class="user-body">
-                  <div class="name">{{ user.name }}</div>
-                  <div class="status">{{ formatRelative(user.lastActive) }}</div>
-                </div>
-              </div>
+              <p class="online-summary">
+                当前共有 <strong>{{ onlineUsers.length }}</strong> 人在线，点击下方按钮查看详情。
+              </p>
+              <v-btn color="primary" block variant="outlined" @click="showOnlineModal = true">
+                查看在线列表
+              </v-btn>
             </v-card-text>
           </v-card>
         </v-col>
@@ -225,11 +220,49 @@
         </v-timeline-item>
       </v-timeline>
     </section>
+
+    <v-dialog v-model="showOnlineModal" max-width="420">
+      <v-card>
+        <v-card-title class="d-flex align-center justify-space-between">
+          <span>在线用户（{{ onlineUsers.length }}）</span>
+          <v-btn icon variant="text" @click="showOnlineModal = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="member-list">
+          <template v-if="onlineUsers.length">
+            <div
+              v-for="user in onlineUsers"
+              :key="user.id"
+              class="member-item"
+              role="button"
+              tabindex="0"
+              @click="handleOnlineUserClick(user)"
+              @keypress.enter.prevent="handleOnlineUserClick(user)"
+            >
+              <v-avatar size="36" color="primary">
+                <template v-if="!user.avatar">
+                  {{ user.username.slice(0, 1).toUpperCase() }}
+                </template>
+                <img v-else :src="user.avatar" :alt="user.username" />
+              </v-avatar>
+              <div class="member-meta">
+                <div class="name">{{ user.username }}</div>
+                <div class="time">{{ formatRelative(user.lastActive) }}</div>
+              </div>
+            </div>
+          </template>
+          <div v-else class="empty">暂无用户在线。</div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { format, formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -237,15 +270,14 @@ import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useNavigationStore } from '@/stores/navigation'
 import type { NavigationCard } from '@/types/navigation'
+import type { ChatPresence } from '@/types/chat'
 
 const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const navigationStore = useNavigationStore()
-
-if (!chatStore.initialized) {
-  chatStore.initialize()
-}
+const showOnlineModal = ref(false)
+const { messages, onlineUsers } = storeToRefs(chatStore)
 
 const hydrationTarget = computed(() => userStore.hydrationTarget)
 const todayHydration = computed(() => userStore.todayHydration)
@@ -263,8 +295,7 @@ const latestOperations = computed(() => userStore.operations.slice(0, 4))
 const bestSchulte = computed(() => userStore.bestSchulteRecord)
 const bestReaction = computed(() => userStore.bestReactionRecord)
 
-const recentMessages = computed(() => chatStore.recentMessages.slice(-5).reverse())
-const onlineUsers = computed(() => chatStore.onlineUsers)
+const recentMessages = computed(() => [...messages.value].slice(-5).reverse())
 
 const goWater = () => router.push({ name: 'WaterTracker' })
 const goGames = (tab?: string) => {
@@ -286,6 +317,16 @@ const handleCardClick = (card: NavigationCard) => {
     window.open(card.externalUrl, '_blank')
   }
 }
+
+const handleOnlineUserClick = (user: ChatPresence) => {
+  showOnlineModal.value = false
+  router.push({ name: 'ChatRoom', query: { focus: user.id } })
+}
+
+onMounted(() => {
+  chatStore.initialize()
+  chatStore.fetchOnlineUsers().catch(() => undefined)
+})
 
 const formatTime = (date: string) => format(new Date(date), 'HH:mm')
 const formatShort = (date: string) => format(new Date(date), 'MM-dd HH:mm')
@@ -550,25 +591,44 @@ const formatRelative = (date: string) =>
 }
 
 .online-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-.online-item {
+.online-summary {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.member-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-top: 1rem;
+}
+
+.member-item {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.35rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.online-item .user-body {
-  display: grid;
-  gap: 0.2rem;
+.member-item:focus-visible,
+.member-item:hover {
+  background: rgba(99, 102, 241, 0.08);
+  transform: translateX(2px);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-.online-item .name {
+.member-meta .name {
   font-weight: 600;
 }
 
-.online-item .status {
+.member-meta .time {
   font-size: 0.8rem;
   color: rgba(0, 0, 0, 0.55);
 }
