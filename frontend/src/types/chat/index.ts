@@ -1,56 +1,21 @@
-export interface Message {
+export interface ChatMessage {
   id: string
-  roomId: string
-  senderId: string
-  senderName: string
+  authorId: string
+  authorName: string
   content: string
-  type: 'text' | 'system'
-  timestamp: Date
-  isEdited?: boolean
-  editedAt?: Date
+  createdAt: string
+  isSystem?: boolean
 }
 
-export interface ChatRoom {
-  id: string
-  name: string
-  description?: string
-  type: 'public' | 'private'
-  memberCount: number
-  lastMessage?: Message
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface ChatUser {
+export interface ChatPresence {
   id: string
   name: string
   avatar?: string
-  isOnline: boolean
-  lastSeen?: Date
-  role: 'member' | 'moderator' | 'admin'
-}
-
-export interface RoomMember extends ChatUser {
-  joinedAt: Date
-  isMuted?: boolean
-}
-
-export interface TypingUser {
-  userId: string
-  userName: string
-  timestamp: Date
-}
-
-export interface MessageFormData {
-  content: string
-  type: 'text'
+  lastActive: string
+  status: 'online' | 'away'
 }
 
 export interface ChatState {
-  rooms: ChatRoom[]
-  currentRoom: ChatRoom | null
-  messages: Record<string, Message[]>
-  onlineUsers: Record<string, boolean>
-  typingUsers: Record<string, TypingUser[]>
-  unreadCounts: Record<string, number>
+  messages: ChatMessage[]
+  onlineUsers: ChatPresence[]
 }
