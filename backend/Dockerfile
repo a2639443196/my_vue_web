@@ -16,14 +16,14 @@ RUN apk add --no-cache \
         gettext
 
 # 安装 Python 依赖
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 清理构建依赖
 RUN apk del gcc musl-dev libpq-dev
 
 # 复制后端代码
-COPY backend/ ./
+COPY . ./
 
 # 确保入口脚本可执行
 RUN chmod +x entrypoint.sh
