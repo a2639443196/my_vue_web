@@ -82,7 +82,9 @@
             variant="filled"
             placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
             @keydown.enter.prevent="handleEnter"
-            bg-color="#f5f5f5"
+            bg-color="#f8f8f8"
+            color="#333333"
+            base-color="#333333"
           ></v-textarea>
         </div>
         <v-btn
@@ -204,34 +206,32 @@ const formatRelative = (value: string) =>
 
 <style scoped>
 .chat-page {
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - 56px - 56px);
   display: flex;
   flex-direction: column;
-  background: #f5f5f7;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
+  background: #ffffff;
+  width: 100%;
 }
 
-/* 固定头部 */
+/* 移动端适配 - 减去AppBar和BottomNav的高度 */
+@media (max-width: 960px) {
+  .chat-page {
+    height: calc(100vh - 64px - 56px);
+  }
+}
+
+/* 头部 */
 .chat-head {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1001;
+  z-index: 10;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e7;
-  padding-top: env(safe-area-inset-top);
+  flex-shrink: 0;
 }
 
 .head-content {
   padding: 8px 16px;
-  padding-top: calc(8px + env(safe-area-inset-top));
 }
 
 .head-row {
@@ -252,8 +252,9 @@ const formatRelative = (value: string) =>
 }
 
 .connection-status {
-  font-size: 0.75rem;
-  color: #8e8e93;
+  font-size: 0.813rem;
+  color: #666666;
+  font-weight: 500;
 }
 
 .status-dot {
@@ -278,13 +279,19 @@ const formatRelative = (value: string) =>
 
 .head-row.secondary {
   font-size: 0.875rem;
-  color: #6e6e73;
+  color: #666666;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333333;
 }
 
 .online-btn {
   text-transform: none;
   font-weight: 500;
   font-size: 0.875rem;
+  color: #333333;
 }
 
 /* 消息区域 */
@@ -292,8 +299,6 @@ const formatRelative = (value: string) =>
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  margin-top: 73px;
-  margin-bottom: 72px;
   background: #f5f5f7;
   will-change: scroll-position;
 }
@@ -318,11 +323,12 @@ const formatRelative = (value: string) =>
 }
 
 .chat-line.mine .meta {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .chat-line.mine .content {
   color: white;
+  font-size: 16px;
 }
 
 .chat-line.mine {
@@ -341,8 +347,8 @@ const formatRelative = (value: string) =>
   background: transparent;
   text-align: center;
   box-shadow: none;
-  color: rgba(15, 23, 42, 0.55);
-  font-size: 0.85rem;
+  color: #888888;
+  font-size: 0.875rem;
 }
 
 .bubble {
@@ -357,27 +363,23 @@ const formatRelative = (value: string) =>
 .meta {
   display: flex;
   gap: 0.5rem;
-  font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.55);
+  font-size: 0.875rem;
+  color: #666666;
   margin-bottom: 0.35rem;
 }
 
 .content {
   white-space: pre-wrap;
-  color: #0f172a;
-  line-height: 1.55;
+  color: #333333;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-/* 固定底部输入框 */
+/* 底部输入框 */
 .chat-input-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1001;
+  flex-shrink: 0;
   background: #ffffff;
   border-top: 1px solid #e5e5e7;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .input-content {
@@ -402,6 +404,13 @@ const formatRelative = (value: string) =>
   padding: 0;
   min-height: auto;
   font-size: 16px;
+  color: #333333;
+  opacity: 1;
+}
+
+.composer :deep(.v-textarea .v-field__input::placeholder) {
+  color: #999999;
+  opacity: 1;
 }
 
 .composer :deep(.v-textarea .v-field__outline) {

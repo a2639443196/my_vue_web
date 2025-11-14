@@ -52,7 +52,7 @@
           </div>
         </div>
         <div class="hydration-footer">
-          <v-btn color="primary" variant="outlined" @click="goWater">前往喝水打卡</v-btn>
+          <v-btn color="#FFFFFF" variant="outlined" @click="goWater">前往喝水打卡</v-btn>
           <div class="small-history" v-if="recentHydration.length">
             <span class="small-title">最近记录</span>
             <ul>

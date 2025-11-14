@@ -142,14 +142,17 @@
     <!-- Bottom navigation for mobile -->
     <v-bottom-navigation
       v-if="isMobile && showBottomNav"
+      :model-value="currentActiveTab"
       grow
       color="primary"
       class="border-t"
+      @update:model-value="handleNavChange"
     >
       <v-btn
         v-for="item in bottomNavItems"
         :key="item.to"
         :to="item.to"
+        :value="item.to"
         variant="text"
       >
         <v-icon>{{ item.icon }}</v-icon>
@@ -204,6 +207,31 @@ const bottomNavItems = computed(() => [
   { to: '/games', title: '游戏', icon: 'mdi-gamepad' },
 ])
 
+// 计算当前激活的Tab
+const currentActiveTab = computed(() => {
+  const path = route.path
+  // 精确匹配
+  const exactMatch = bottomNavItems.value.find(item => item.to === path)
+  if (exactMatch) return exactMatch.to
+
+  // 首页特殊处理，只有完全匹配才选中
+  if (path === '/') return '/'
+
+  // 其他路径检查是否匹配子路径
+  const match = bottomNavItems.value.find(item => {
+    if (item.to === '/') return false
+    return path.startsWith(item.to)
+  })
+
+  return match ? match.to : null
+})
+
+// 处理导航变化
+const handleNavChange = (value: string) => {
+  if (value && value !== route.path) {
+    router.push(value)
+  }
+}
 
 const toggleTheme = () => {
   themeStore.toggle()
