@@ -7,7 +7,7 @@
     }"
   >
     <!-- 固定头部 -->
-    <header class="chat-head">
+    <header class="chat-head" ref="headerRef">
       <div class="head-content">
         <div class="head-row primary">
           <v-btn
@@ -42,7 +42,11 @@
     </header>
 
     <!-- 消息区域 -->
-    <section ref="messageContainer" class="chat-feed">
+    <section
+      ref="messageContainer"
+      class="chat-feed"
+      :style="chatFeedStyle"
+    >
       <div class="feed-content">
         <div
           v-for="message in messages"
@@ -80,28 +84,9 @@
     <footer
       class="chat-input-bar"
       :class="{ 'chat-input-bar--safe': shouldUseMobileLayout && hasSafeArea }"
+      ref="inputBarRef"
     >
       <div class="input-content">
-        <div class="input-tools">
-          <v-btn
-            icon
-            variant="text"
-            class="tool-btn"
-            density="comfortable"
-            aria-label="语音输入"
-          >
-            <v-icon>mdi-microphone-outline</v-icon>
-          </v-btn>
-          <v-btn
-            icon
-            variant="text"
-            class="tool-btn"
-            density="comfortable"
-            aria-label="表情面板"
-          >
-            <v-icon>mdi-emoticon-outline</v-icon>
-          </v-btn>
-        </div>
         <div class="composer">
           <v-textarea
             v-model="draft"
@@ -112,7 +97,7 @@
             placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
             @focus="handleComposerFocus"
             @keydown.enter.prevent="handleEnter"
-            bg-color="#f7f8fa"
+            bg-color="#f5f5f7"
             color="#1f2933"
             base-color="#1f2933"
             hide-details
@@ -180,7 +165,10 @@ const { shouldUseMobileLayout, hasSafeArea } = useDeviceDetection()
 const draft = ref('')
 const showMembers = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
+const inputBarRef = ref<HTMLElement | null>(null)
 const shouldStickToBottom = ref(true)
+const feedHeight = ref<number | null>(null)
 const currentUserId = computed(() => userStore.user?.id ?? 'guest')
 const isConnected = computed(() => !connecting.value && !!room.value)
 const sortedOnlineUsers = computed(() =>
@@ -188,6 +176,17 @@ const sortedOnlineUsers = computed(() =>
     (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
   )
 )
+
+const chatFeedStyle = computed(() => (feedHeight.value ? { height: `${feedHeight.value}px` } : {}))
+
+const recomputeFeedHeight = () => {
+  if (typeof window === 'undefined') return
+  const viewport = window.innerHeight
+  const head = headerRef.value?.offsetHeight ?? 0
+  const footer = inputBarRef.value?.offsetHeight ?? 0
+  const available = Math.max(viewport - head - footer, 240)
+  feedHeight.value = available
+}
 
 const scrollToBottom = (smooth = false) => {
   nextTick(() => {
@@ -245,6 +244,7 @@ onMounted(async () => {
   chatStore.fetchOnlineUsers().catch(() => undefined)
   scrollToBottom()
   updateScrollAffinity()
+  recomputeFeedHeight()
 })
 
 const stopScrollListener = useEventListener(
@@ -260,14 +260,39 @@ const { stop: stopResizeObserver } = useResizeObserver(messageContainer, () => {
   }
 })
 
+const { stop: stopHeaderObserver } = useResizeObserver(headerRef, () => {
+  recomputeFeedHeight()
+})
+
+const { stop: stopInputObserver } = useResizeObserver(inputBarRef, () => {
+  recomputeFeedHeight()
+})
+
+const stopWindowResize =
+  typeof window !== 'undefined'
+    ? useEventListener(window, 'resize', () => recomputeFeedHeight(), {
+        passive: true
+      })
+    : () => {}
+
 const handleComposerFocus = () => {
   shouldStickToBottom.value = true
   scrollToBottom(true)
 }
 
+watch(
+  () => [shouldUseMobileLayout.value, hasSafeArea.value],
+  () => {
+    nextTick(() => recomputeFeedHeight())
+  }
+)
+
 onBeforeUnmount(() => {
   stopScrollListener()
   stopResizeObserver()
+  stopHeaderObserver()
+  stopInputObserver()
+  stopWindowResize()
 })
 
 const formatTime = (value: string) => format(new Date(value), 'MM-dd HH:mm')
@@ -370,7 +395,8 @@ const formatRelative = (value: string) =>
 
 /* 消息区域 */
 .chat-feed {
-  flex: 1;
+  flex: 0 0 auto;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: #f5f5f7;
@@ -381,7 +407,7 @@ const formatRelative = (value: string) =>
 }
 
 .feed-content {
-  padding: 20px 20px 96px;
+  padding: 20px;
   max-width: 100%;
 }
 
@@ -478,21 +504,12 @@ const formatRelative = (value: string) =>
   min-height: 48px;
 }
 
-.input-tools {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.tool-btn {
-  color: #4b5563 !important;
-}
-
 .composer :deep(.v-textarea .v-field) {
   border-radius: 24px;
   padding: 6px 16px;
   min-height: 48px;
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
+  background: #f7f8fa;
 }
 
 .composer :deep(.v-textarea .v-field__input) {

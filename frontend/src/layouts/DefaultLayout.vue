@@ -71,7 +71,7 @@
 
     <!-- Mobile: Top App Bar -->
     <v-app-bar
-      v-if="shouldUseMobileLayout"
+      v-if="shouldUseMobileLayout && !isFullBleed"
       height="48"
       elevation="1"
       color="white"
