@@ -107,27 +107,29 @@
         </div>
       </div>
 
-      <v-table>
-        <thead>
-          <tr>
-            <th>时间</th>
-            <th>饮品</th>
-            <th>容量</th>
-            <th>咖啡因</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in entries.slice(0, 10)" :key="entry.id">
-            <td>{{ formatRecord(entry.recorded_at) }}</td>
-            <td>
-              <v-icon size="16" class="mr-1">{{ entry.drink_icon || 'mdi-cup-water' }}</v-icon>
-              {{ entry.drink_name }}
-            </td>
-            <td>{{ entry.amount }} ml</td>
-            <td>{{ entry.caffeine_mg ? entry.caffeine_mg + ' mg' : '--' }}</td>
-          </tr>
-        </tbody>
-      </v-table>
+      <div class="table-wrapper">
+        <v-table>
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>饮品</th>
+              <th>容量</th>
+              <th>咖啡因</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="entry in entries.slice(0, 10)" :key="entry.id">
+              <td>{{ formatRecord(entry.recorded_at) }}</td>
+              <td>
+                <v-icon size="16" class="mr-1">{{ entry.drink_icon || 'mdi-cup-water' }}</v-icon>
+                {{ entry.drink_name }}
+              </td>
+              <td>{{ entry.amount }} ml</td>
+              <td>{{ entry.caffeine_mg ? entry.caffeine_mg + ' mg' : '--' }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </div>
     </section>
 
     <v-dialog v-model="showDrinkDialog" max-width="420">
@@ -330,11 +332,19 @@ onMounted(loadData)
 
 .hydration-hero {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
   background: linear-gradient(135deg, rgba(47, 112, 255, 0.12), rgba(76, 175, 80, 0.12));
-  border-radius: 32px;
-  padding: clamp(1.5rem, 4vw, 3rem);
+  border-radius: 24px;
+  padding: 1.5rem;
+}
+
+@media (min-width: 769px) {
+  .hydration-hero {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border-radius: 32px;
+  }
 }
 
 .hero-info h1 {
@@ -350,8 +360,14 @@ onMounted(loadData)
 .stat-grid {
   margin-top: 1.5rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
+}
+
+@media (min-width: 769px) {
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
 }
 
 .stat-card {
@@ -421,14 +437,14 @@ onMounted(loadData)
 }
 
 .calendar-cell {
-  min-height: 72px;
-  border-radius: 16px;
+  min-height: 60px;
+  border-radius: 12px;
   background: rgba(15, 23, 42, 0.02);
-  padding: 0.5rem;
+  padding: 0.4rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .calendar-cell.today {
@@ -452,8 +468,14 @@ onMounted(loadData)
   font-size: 0.8rem;
 }
 
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .history-card table {
   width: 100%;
+  min-width: 500px;
 }
 
 .eyebrow {
@@ -469,6 +491,39 @@ onMounted(loadData)
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
+  }
+
+  .water-page {
+    gap: 1.5rem;
+  }
+
+  .calendar-card,
+  .history-card {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .calendar-grid {
+    gap: 0.3rem;
+  }
+
+  .calendar-cell {
+    min-height: 50px;
+    padding: 0.3rem;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+  }
+
+  .pill {
+    font-size: 0.75rem;
+    padding: 0.05rem 0.5rem;
   }
 }
 </style>

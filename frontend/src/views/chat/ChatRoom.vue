@@ -59,9 +59,14 @@
             @keydown.enter.prevent="handleEnter"
           ></v-textarea>
         </div>
-        <v-btn color="primary" class="send-btn" :disabled="!draft.trim()" @click="sendMessage">
-          <v-icon start>mdi-send</v-icon>
-          发送
+        <v-btn
+          color="primary"
+          class="send-btn"
+          :disabled="!draft.trim()"
+          @click="sendMessage"
+          icon
+        >
+          <v-icon>mdi-send</v-icon>
         </v-btn>
       </footer>
     </v-card>
@@ -166,7 +171,7 @@ const formatRelative = (value: string) =>
 <style scoped>
 .chat-page {
   min-height: calc(100vh - 140px);
-  padding: clamp(1rem, 4vw, 2.5rem);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -254,6 +259,16 @@ const formatRelative = (value: string) =>
   align-items: flex-start;
 }
 
+.chat-line:not(.system) .bubble {
+  max-width: 85%;
+}
+
+@media (max-width: 768px) {
+  .chat-line:not(.system) .bubble {
+    max-width: 75%;
+  }
+}
+
 .chat-line.mine {
   justify-content: end;
 }
@@ -322,10 +337,11 @@ const formatRelative = (value: string) =>
 }
 
 .send-btn {
-  align-self: stretch;
-  min-width: 120px;
-  height: 100%;
-  border-radius: 18px;
+  align-self: flex-end;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-left: 0.5rem;
 }
 
 .member-list {
@@ -369,7 +385,8 @@ const formatRelative = (value: string) =>
   }
 
   .send-btn {
-    min-width: 0;
+    width: 44px;
+    height: 44px;
   }
 
   .chat-head {
@@ -378,7 +395,21 @@ const formatRelative = (value: string) =>
 
   .chat-feed {
     border-radius: 18px;
-    padding: 1rem;
+    padding: 0.75rem;
+  }
+
+  .chat-input-bar {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .chat-line {
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .bubble {
+    padding: 0.6rem 0.85rem;
   }
 }
 </style>

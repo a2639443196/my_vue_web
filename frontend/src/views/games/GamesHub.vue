@@ -162,4 +162,41 @@ const goProfile = () => router.push({ name: 'Profile' })
 .card-stats strong {
   font-size: 1.1rem;
 }
+
+@media (max-width: 768px) {
+  .games-hub {
+    gap: 1.5rem;
+  }
+
+  .hub-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .game-card {
+    border-radius: 20px;
+  }
+
+  .card-hero {
+    height: 120px;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-stats {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .card-stats strong {
+    font-size: 1rem;
+  }
+}
 </style>

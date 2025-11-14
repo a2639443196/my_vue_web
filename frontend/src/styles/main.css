@@ -162,9 +162,50 @@ body {
   input[type="email"],
   input[type="password"],
   input[type="tel"],
+  input[type="number"],
   select,
   textarea {
     font-size: 16px;
+  }
+
+  /* Improve mobile touch targets */
+  .v-btn,
+  .v-chip,
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile-friendly cards */
+  .v-card {
+    border-radius: 16px !important;
+    margin: 0.5rem 0;
+  }
+
+  /* Reduce padding on mobile */
+  .v-container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Make tables scrollable */
+  .v-data-table {
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
+  }
+
+  /* Optimize form inputs for mobile */
+  .v-text-field .v-field {
+    border-radius: 12px !important;
+  }
+
+  .v-select .v-field {
+    border-radius: 12px !important;
+  }
+
+  .v-textarea .v-field {
+    border-radius: 12px !important;
   }
 }
 

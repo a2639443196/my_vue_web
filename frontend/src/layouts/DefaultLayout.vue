@@ -142,7 +142,7 @@
     <!-- Bottom navigation for mobile -->
     <v-bottom-navigation
       v-if="isMobile && showBottomNav"
-      v-model="activeBottomNav"
+      :model-value="activeBottomNav"
       grow
       color="primary"
       class="border-t"
@@ -208,10 +208,16 @@ const bottomNavItems = computed(() => [
 
 // Methods
 const resolveBottomNavValue = (path: string) => {
-  const match = bottomNavItems.value.find(item =>
-    path === item.to || path.startsWith(`${item.to}/`)
-  )
-  return match ? match.to : bottomNavItems.value[0].to
+  // 精确匹配路径，避免首页始终被选中的问题
+  const exactMatch = bottomNavItems.value.find(item => path === item.to)
+  if (exactMatch) return exactMatch.to
+
+  // 如果没有精确匹配，检查是否是子路径
+  const match = bottomNavItems.value.find(item => {
+    if (item.to === '/') return false  // 首页不做子路径匹配
+    return path.startsWith(`${item.to}/`)
+  })
+  return match ? match.to : null
 }
 
 const activeBottomNav = ref(resolveBottomNavValue(route.path))

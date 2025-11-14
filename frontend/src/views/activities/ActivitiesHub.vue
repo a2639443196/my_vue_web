@@ -101,24 +101,26 @@
           <v-chip size="small" variant="flat">{{ smokingRecords.length }}</v-chip>
         </v-card-title>
         <v-divider></v-divider>
-        <v-table density="comfortable">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>数量</th>
-              <th>心情</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="record in smokingRecords" :key="record.id">
-              <td>{{ formatRecord(record.recorded_at) }}</td>
-              <td>{{ record.count }} 支</td>
-              <td>{{ translateMood(record.mood) }}</td>
-              <td>{{ record.notes || '--' }}</td>
-            </tr>
-          </tbody>
-        </v-table>
+        <div class="table-wrapper">
+          <v-table density="comfortable">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>数量</th>
+                <th>心情</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="record in smokingRecords" :key="record.id">
+                <td>{{ formatRecord(record.recorded_at) }}</td>
+                <td>{{ record.count }} 支</td>
+                <td>{{ translateMood(record.mood) }}</td>
+                <td>{{ record.notes || '--' }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+        </div>
       </v-card>
 
       <v-card elevation="4">
@@ -127,24 +129,26 @@
           <v-chip size="small" variant="flat">{{ slackRecords.length }}</v-chip>
         </v-card-title>
         <v-divider></v-divider>
-        <v-table density="comfortable">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>时长</th>
-              <th>心情</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="record in slackRecords" :key="record.id">
-              <td>{{ formatRecord(record.recorded_at) }}</td>
-              <td>{{ record.duration }} 分钟</td>
-              <td>{{ translateMood(record.mood) }}</td>
-              <td>{{ record.notes || '--' }}</td>
-            </tr>
-          </tbody>
-        </v-table>
+        <div class="table-wrapper">
+          <v-table density="comfortable">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>时长</th>
+                <th>心情</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="record in slackRecords" :key="record.id">
+                <td>{{ formatRecord(record.recorded_at) }}</td>
+                <td>{{ record.duration }} 分钟</td>
+                <td>{{ translateMood(record.mood) }}</td>
+                <td>{{ record.notes || '--' }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+        </div>
       </v-card>
     </section>
 
@@ -330,7 +334,7 @@ onMounted(() => {
 
 .forms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
@@ -346,7 +350,7 @@ onMounted(() => {
 
 .history-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
@@ -375,9 +379,62 @@ onMounted(() => {
   color: rgba(15, 23, 42, 0.7);
 }
 
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper table {
+  min-width: 500px;
+}
+
 @media (max-width: 768px) {
   .form-actions {
     flex-direction: column;
+  }
+
+  .activities-page {
+    gap: 1rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    padding: 1rem;
+  }
+
+  .form-card {
+    border-radius: 20px;
+  }
+
+  .timeline-card {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .timeline-title {
+    font-size: 1.25rem;
+  }
+
+  .timeline-entry .title {
+    font-size: 0.95rem;
+  }
+
+  .timeline-entry .details {
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .forms-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .history-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 }
 </style>
