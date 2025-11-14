@@ -170,11 +170,20 @@
       class="layout-main"
       :class="{ 'mobile-main': shouldUseMobileLayout }"
     >
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <div
+        class="page-surface"
+        :class="{
+          'page-surface--mobile': shouldUseMobileLayout,
+          'page-surface--safe-bottom': shouldUseMobileLayout && hasSafeArea,
+          'page-surface--full': isFullBleed
+        }"
+      >
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </div>
     </v-main>
   </div>
 </template>
@@ -225,6 +234,8 @@ const mobileNavItems = computed(() => [
 const toggleTheme = () => {
   themeStore.toggle()
 }
+
+const isFullBleed = computed(() => route.meta.fullBleed === true)
 
 const handleLogout = async () => {
   try {
@@ -277,6 +288,34 @@ watch(
 .layout-main {
   background: transparent;
   padding: 0;
+}
+
+.page-surface {
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 2vw, 2.5rem);
+  min-height: 100%;
+  transition: padding 0.2s ease;
+}
+
+.page-surface--mobile {
+  padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(16px, 6vw, 24px)
+    calc(20px + env(safe-area-inset-bottom, 0px));
+  gap: 1.25rem;
+}
+
+.page-surface--safe-bottom {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.page-surface--full {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+  height: 100%;
 }
 
 /* 移动端主内容区 */

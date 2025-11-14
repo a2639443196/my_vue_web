@@ -68,7 +68,8 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '聊天室',
           requiresAuth: true,
-          keepAlive: true
+          keepAlive: true,
+          fullBleed: true
         }
       },
       {

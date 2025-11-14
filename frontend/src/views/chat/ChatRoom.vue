@@ -1,11 +1,11 @@
 <template>
   <div
-      class="chat-page"
-      :class="{
-        'mobile-layout': shouldUseMobileLayout,
-        'safe-area-mobile': hasSafeArea && shouldUseMobileLayout
-      }"
-    >
+    class="chat-page"
+    :class="{
+      'chat-page--mobile': shouldUseMobileLayout,
+      'chat-page--safe': hasSafeArea && shouldUseMobileLayout
+    }"
+  >
     <!-- 固定头部 -->
     <header class="chat-head">
       <div class="head-content">
@@ -77,20 +77,45 @@
     </section>
 
     <!-- 固定底部输入框 -->
-    <footer class="chat-input-bar">
+    <footer
+      class="chat-input-bar"
+      :class="{ 'chat-input-bar--safe': shouldUseMobileLayout && hasSafeArea }"
+    >
       <div class="input-content">
+        <div class="input-tools">
+          <v-btn
+            icon
+            variant="text"
+            class="tool-btn"
+            density="comfortable"
+            aria-label="语音输入"
+          >
+            <v-icon>mdi-microphone-outline</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            variant="text"
+            class="tool-btn"
+            density="comfortable"
+            aria-label="表情面板"
+          >
+            <v-icon>mdi-emoticon-outline</v-icon>
+          </v-btn>
+        </div>
         <div class="composer">
           <v-textarea
             v-model="draft"
             auto-grow
             max-rows="4"
             rows="1"
-            variant="filled"
+            variant="solo"
             placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
+            @focus="handleComposerFocus"
             @keydown.enter.prevent="handleEnter"
-            bg-color="#f8f8f8"
-            color="#333333"
-            base-color="#333333"
+            bg-color="#f7f8fa"
+            color="#1f2933"
+            base-color="#1f2933"
+            hide-details
           ></v-textarea>
         </div>
         <v-btn
@@ -99,6 +124,7 @@
           :disabled="!draft.trim()"
           @click="sendMessage"
           icon
+          elevation="0"
         >
           <v-icon>mdi-send</v-icon>
         </v-btn>
@@ -137,10 +163,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { formatDistanceToNow, format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { useEventListener, useResizeObserver } from '@vueuse/core'
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
 import { useDeviceDetection } from '@/composables/useDeviceDetection'
@@ -153,6 +180,7 @@ const { shouldUseMobileLayout, hasSafeArea } = useDeviceDetection()
 const draft = ref('')
 const showMembers = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
+const shouldStickToBottom = ref(true)
 const currentUserId = computed(() => userStore.user?.id ?? 'guest')
 const isConnected = computed(() => !connecting.value && !!room.value)
 const sortedOnlineUsers = computed(() =>
@@ -165,16 +193,20 @@ const scrollToBottom = (smooth = false) => {
   nextTick(() => {
     if (messageContainer.value) {
       const container = messageContainer.value
-      if (smooth) {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: 'smooth'
-        })
-      } else {
-        container.scrollTop = container.scrollHeight
-      }
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      })
     }
   })
+}
+
+const updateScrollAffinity = () => {
+  if (!messageContainer.value) return
+  const container = messageContainer.value
+  const distance =
+    container.scrollHeight - (container.scrollTop + container.clientHeight)
+  shouldStickToBottom.value = distance <= 96
 }
 
 const sendMessage = () => {
@@ -182,7 +214,8 @@ const sendMessage = () => {
   try {
     chatStore.sendMessage(draft.value)
     draft.value = ''
-    scrollToBottom()
+    shouldStickToBottom.value = true
+    scrollToBottom(true)
   } catch (error: any) {
     console.error(error)
   }
@@ -198,13 +231,43 @@ const handleEnter = (event: KeyboardEvent) => {
 
 watch(
   () => messages.value.length,
-  () => scrollToBottom()
+  (newVal, oldVal) => {
+    if (!newVal) return
+    if (shouldStickToBottom.value) {
+      const smooth = typeof oldVal === 'number' ? newVal - oldVal <= 5 : false
+      scrollToBottom(smooth)
+    }
+  }
 )
 
 onMounted(async () => {
   await chatStore.initialize()
   chatStore.fetchOnlineUsers().catch(() => undefined)
   scrollToBottom()
+  updateScrollAffinity()
+})
+
+const stopScrollListener = useEventListener(
+  messageContainer,
+  'scroll',
+  () => updateScrollAffinity(),
+  { passive: true }
+)
+
+const { stop: stopResizeObserver } = useResizeObserver(messageContainer, () => {
+  if (shouldStickToBottom.value) {
+    scrollToBottom(true)
+  }
+})
+
+const handleComposerFocus = () => {
+  shouldStickToBottom.value = true
+  scrollToBottom(true)
+}
+
+onBeforeUnmount(() => {
+  stopScrollListener()
+  stopResizeObserver()
 })
 
 const formatTime = (value: string) => format(new Date(value), 'MM-dd HH:mm')
@@ -214,24 +277,21 @@ const formatRelative = (value: string) =>
 
 <style scoped>
 .chat-page {
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   width: 100%;
 }
 
-/* 移动端浏览器 - 减去顶部AppBar的高度 */
-.mobile-layout .chat-page {
-  height: calc(100vh - 48px);
-  height: calc(100dvh - 48px);
+.chat-page--mobile {
+  min-height: calc(100vh - 48px);
+  min-height: calc(100dvh - 48px);
 }
 
-/* 有安全区域时调整 */
-.safe-area-mobile .chat-page {
-  height: calc(100vh - 48px - env(safe-area-inset-top));
-  height: calc(100dvh - 48px - env(safe-area-inset-top));
+.chat-page--safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* 头部 */
@@ -315,11 +375,13 @@ const formatRelative = (value: string) =>
   -webkit-overflow-scrolling: touch;
   background: #f5f5f7;
   will-change: scroll-position;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable both-edges;
 }
 
 .feed-content {
-  padding: 16px;
-  padding-bottom: 32px;
+  padding: 20px 20px 96px;
   max-width: 100%;
 }
 
@@ -394,36 +456,55 @@ const formatRelative = (value: string) =>
   flex-shrink: 0;
   background: #ffffff;
   border-top: 1px solid #e5e5e7;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.04);
+}
+
+.chat-input-bar--safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .input-content {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 12px;
+  padding: 12px 20px;
 }
 
 .composer {
   flex: 1;
-  min-height: 44px;
+  min-height: 48px;
+}
+
+.input-tools {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tool-btn {
+  color: #4b5563 !important;
 }
 
 .composer :deep(.v-textarea .v-field) {
-  border-radius: 22px;
-  padding: 8px 16px;
-  min-height: 44px;
+  border-radius: 24px;
+  padding: 6px 16px;
+  min-height: 48px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .composer :deep(.v-textarea .v-field__input) {
   padding: 0;
   min-height: auto;
   font-size: 16px;
-  color: #333333;
+  color: #1f2933;
   opacity: 1;
 }
 
 .composer :deep(.v-textarea .v-field__input::placeholder) {
-  color: #999999;
+  color: #94a3b8;
   opacity: 1;
 }
 
@@ -436,6 +517,7 @@ const formatRelative = (value: string) =>
   height: 44px !important;
   border-radius: 50% !important;
   flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
 }
 
 .member-list {
@@ -518,20 +600,19 @@ const formatRelative = (value: string) =>
     padding: 6px 8px;
     padding-top: calc(6px + env(safe-area-inset-top));
   }
+}
 
-  /* 超小屏幕优化 */
-  @media (max-width: 375px) {
-    .feed-content {
-      padding: 6px;
-    }
+@media (max-width: 375px) {
+  .feed-content {
+    padding: 12px 10px 88px;
+  }
 
-    .input-content {
-      padding: 4px 6px;
-    }
+  .input-content {
+    padding: 10px 12px;
+  }
 
-    .bubble {
-      padding: 6px 10px;
-    }
+  .bubble {
+    padding: 6px 10px;
   }
 }
 </style>

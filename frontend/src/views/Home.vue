@@ -149,7 +149,13 @@
               <p class="online-summary">
                 当前共有 <strong>{{ onlineUsers.length }}</strong> 人在线，点击下方按钮查看详情。
               </p>
-              <v-btn color="primary" block variant="outlined" @click="showOnlineModal = true">
+              <v-btn
+                color="primary"
+                block
+                variant="outlined"
+                :loading="isFetchingOnlineUsers"
+                @click="openOnlineModal"
+              >
                 查看在线列表
               </v-btn>
             </v-card-text>
@@ -231,7 +237,11 @@
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text class="member-list">
-          <template v-if="onlineUsers.length">
+          <div v-if="isFetchingOnlineUsers" class="member-loading">
+            <v-progress-circular indeterminate color="primary" size="28"></v-progress-circular>
+            <span>正在同步在线状态...</span>
+          </div>
+          <template v-else-if="onlineUsers.length">
             <div
               v-for="user in onlineUsers"
               :key="user.id"
@@ -269,6 +279,7 @@ import { zhCN } from 'date-fns/locale'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import { useNavigationStore } from '@/stores/navigation'
+import { useNotificationStore } from '@/stores/notification'
 import type { NavigationCard } from '@/types/navigation'
 import type { ChatPresence } from '@/types/chat'
 
@@ -276,7 +287,9 @@ const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const navigationStore = useNavigationStore()
+const notificationStore = useNotificationStore()
 const showOnlineModal = ref(false)
+const isFetchingOnlineUsers = ref(false)
 const { messages, onlineUsers } = storeToRefs(chatStore)
 
 const hydrationTarget = computed(() => userStore.hydrationTarget)
@@ -321,6 +334,21 @@ const handleCardClick = (card: NavigationCard) => {
 const handleOnlineUserClick = (user: ChatPresence) => {
   showOnlineModal.value = false
   router.push({ name: 'ChatRoom', query: { focus: user.id } })
+}
+
+const openOnlineModal = async () => {
+  if (isFetchingOnlineUsers.value) return
+  isFetchingOnlineUsers.value = true
+  try {
+    await chatStore.fetchOnlineUsers()
+    showOnlineModal.value = true
+  } catch (error) {
+    console.error(error)
+    const message = error instanceof Error ? error.message : '无法获取在线用户'
+    notificationStore.showError(message)
+  } finally {
+    isFetchingOnlineUsers.value = false
+  }
 }
 
 onMounted(() => {
@@ -631,6 +659,14 @@ const formatRelative = (date: string) =>
 .member-meta .time {
   font-size: 0.8rem;
   color: rgba(0, 0, 0, 0.55);
+}
+
+.member-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(15, 23, 42, 0.6);
+  padding: 0.5rem 0;
 }
 
 .schedule {
