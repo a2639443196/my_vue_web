@@ -165,38 +165,67 @@ const goProfile = () => router.push({ name: 'Profile' })
 
 @media (max-width: 768px) {
   .games-hub {
-    gap: 1.5rem;
+    gap: 1rem;
+    padding: 8px;
   }
 
   .hub-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
+  }
+
+  .hub-header h1 {
+    font-size: 1.5rem;
   }
 
   .cards {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .game-card {
-    border-radius: 20px;
+    border-radius: 16px;
   }
 
   .card-hero {
-    height: 120px;
+    height: 100px;
   }
 
   .card-body {
-    padding: 1rem;
+    padding: 12px;
   }
 
   .card-stats {
-    padding: 0.5rem 0.75rem;
+    padding: 8px 12px;
+    gap: 0.5rem;
   }
 
   .card-stats strong {
-    font-size: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .card-body p {
+    font-size: 0.875rem;
+  }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 375px) {
+  .game-card {
+    border-radius: 12px;
+  }
+
+  .card-hero {
+    height: 80px;
+  }
+
+  .card-body {
+    padding: 10px;
+  }
+
+  .card-stats {
+    padding: 6px 10px;
   }
 }
 </style>

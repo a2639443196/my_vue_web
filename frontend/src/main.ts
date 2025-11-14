@@ -21,13 +21,13 @@ const i18n = createI18n({
   messages: {
     'zh-CN': {
       app: {
-        title: '健康生活管理平台',
+        title: '彦祖的导航',
         description: '追踪和管理您的健康生活'
       }
     },
     en: {
       app: {
-        title: 'Wellness Hub',
+        title: 'Yanzu\'s Navigation',
         description: 'Track and manage your wellness journey'
       }
     }

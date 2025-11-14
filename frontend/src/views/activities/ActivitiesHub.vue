@@ -389,42 +389,74 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  .activities-page {
+    gap: 0.75rem;
+    padding: 8px;
+  }
+
   .form-actions {
     flex-direction: column;
   }
 
-  .activities-page {
-    gap: 1rem;
-  }
-
   .summary-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .summary-card {
-    padding: 1rem;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 2px 0;
   }
 
   .form-card {
-    border-radius: 20px;
+    border-radius: 16px;
+    margin: 4px 0;
+  }
+
+  .form-card .v-card-text {
+    padding: 12px;
   }
 
   .timeline-card {
-    padding: 1rem;
-    border-radius: 20px;
+    padding: 12px;
+    border-radius: 16px;
+    margin: 4px 0;
   }
 
   .timeline-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
   }
 
   .timeline-entry .title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 
   .timeline-entry .details {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  .forms-grid {
+    gap: 0.75rem;
+  }
+
+  .history-grid {
+    gap: 0.75rem;
+  }
+
+  /* 超小屏幕优化 */
+  @media (max-width: 375px) {
+    .summary-card {
+      padding: 10px;
+    }
+
+    .timeline-card {
+      padding: 10px;
+    }
+
+    .form-card .v-card-text {
+      padding: 10px;
+    }
   }
 }
 

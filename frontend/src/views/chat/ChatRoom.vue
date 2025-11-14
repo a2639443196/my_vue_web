@@ -1,5 +1,11 @@
 <template>
-  <div class="chat-page">
+  <div
+      class="chat-page"
+      :class="{
+        'mobile-layout': shouldUseMobileLayout,
+        'safe-area-mobile': hasSafeArea && shouldUseMobileLayout
+      }"
+    >
     <!-- 固定头部 -->
     <header class="chat-head">
       <div class="head-content">
@@ -137,10 +143,12 @@ import { formatDistanceToNow, format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
+import { useDeviceDetection } from '@/composables/useDeviceDetection'
 
 const chatStore = useChatStore()
 const userStore = useUserStore()
 const { messages, onlineUsers, connecting, room } = storeToRefs(chatStore)
+const { shouldUseMobileLayout, hasSafeArea } = useDeviceDetection()
 
 const draft = ref('')
 const showMembers = ref(false)
@@ -206,18 +214,24 @@ const formatRelative = (value: string) =>
 
 <style scoped>
 .chat-page {
-  height: calc(100vh - 56px - 56px);
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   width: 100%;
 }
 
-/* 移动端适配 - 减去AppBar和BottomNav的高度 */
-@media (max-width: 960px) {
-  .chat-page {
-    height: calc(100vh - 64px - 56px);
-  }
+/* 移动端浏览器 - 减去顶部AppBar的高度 */
+.mobile-layout .chat-page {
+  height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
+}
+
+/* 有安全区域时调整 */
+.safe-area-mobile .chat-page {
+  height: calc(100vh - 48px - env(safe-area-inset-top));
+  height: calc(100dvh - 48px - env(safe-area-inset-top));
 }
 
 /* 头部 */
@@ -459,7 +473,7 @@ const formatRelative = (value: string) =>
   }
 
   .feed-content {
-    padding: 12px;
+    padding: 8px;
   }
 
   .chat-line {
@@ -484,7 +498,8 @@ const formatRelative = (value: string) =>
   }
 
   .input-content {
-    padding: 8px 12px;
+    padding: 6px 8px;
+    gap: 6px;
   }
 
   .composer :deep(.v-textarea .v-field__input) {
@@ -497,6 +512,26 @@ const formatRelative = (value: string) =>
 
   .head-row.secondary {
     font-size: 0.813rem;
+  }
+
+  .head-content {
+    padding: 6px 8px;
+    padding-top: calc(6px + env(safe-area-inset-top));
+  }
+
+  /* 超小屏幕优化 */
+  @media (max-width: 375px) {
+    .feed-content {
+      padding: 6px;
+    }
+
+    .input-content {
+      padding: 4px 6px;
+    }
+
+    .bubble {
+      padding: 6px 10px;
+    }
   }
 }
 </style>

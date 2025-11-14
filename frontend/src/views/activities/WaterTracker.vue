@@ -487,43 +487,69 @@ onMounted(loadData)
 }
 
 @media (max-width: 768px) {
+  .water-page {
+    gap: 1rem;
+    padding: 8px;
+  }
+
   .form-actions {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
   }
 
-  .water-page {
-    gap: 1.5rem;
-  }
-
   .calendar-card,
   .history-card {
-    padding: 1rem;
-    border-radius: 20px;
+    padding: 12px;
+    border-radius: 16px;
+    margin: 4px 0;
   }
 
   .calendar-grid {
-    gap: 0.3rem;
+    gap: 0.25rem;
   }
 
   .calendar-cell {
-    min-height: 50px;
-    padding: 0.3rem;
+    min-height: 44px;
+    padding: 0.2rem;
+    border-radius: 8px;
   }
 
   .stat-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
   }
 
   .stat-card {
-    padding: 0.75rem;
+    padding: 8px;
+    border-radius: 10px;
   }
 
   .pill {
-    font-size: 0.75rem;
-    padding: 0.05rem 0.5rem;
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
+  }
+
+  .hero-form {
+    padding: 12px;
+    border-radius: 16px;
+    gap: 0.8rem;
+  }
+
+  .hero-info h1 {
+    font-size: 1.5rem;
+  }
+
+  /* 超小屏幕 */
+  @media (max-width: 375px) {
+    .calendar-cell {
+      min-height: 36px;
+      font-size: 0.8rem;
+    }
+
+    .pill {
+      font-size: 0.65rem;
+    }
   }
 }
 </style>

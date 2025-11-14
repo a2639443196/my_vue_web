@@ -15,19 +15,18 @@
     <v-card class="auth-card" elevation="12">
       <v-card-title class="text-h5 font-weight-bold mb-2">账号登录</v-card-title>
       <v-card-subtitle class="mb-6 text-medium-emphasis">
-        使用手机号即可登录，所有数据仅保存在你的浏览器本地。
+        使用用户名登录，支持手机号、邮箱或自定义用户名，所有数据仅保存在你的浏览器本地。
       </v-card-subtitle>
 
       <v-form @submit.prevent="handleSubmit" ref="formRef">
         <v-text-field
           v-model="form.phone"
-          label="手机号 / 邮箱"
+          label="用户名"
           type="text"
-          inputmode="tel"
           required
-          prepend-inner-icon="mdi-cellphone"
+          prepend-inner-icon="mdi-account"
           :rules="[rules.required, rules.phone]"
-          hint="老用户可继续使用邮箱登录"
+          hint="可以使用手机号、邮箱或用户名登录"
           persistent-hint
         ></v-text-field>
 

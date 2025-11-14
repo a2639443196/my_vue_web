@@ -20,7 +20,7 @@
     <v-card class="auth-card" elevation="12">
       <v-card-title class="text-h5 font-weight-bold mb-2">创建新账号</v-card-title>
       <v-card-subtitle class="mb-6 text-medium-emphasis">
-        只需手机号 + 密码三步即可完成注册，告别繁琐邮箱校验。
+        创建用户名和密码即可完成注册，支持手机号作为联系方式。
       </v-card-subtitle>
 
       <v-form @submit.prevent="handleSubmit" ref="formRef">
