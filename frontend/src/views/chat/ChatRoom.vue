@@ -1,21 +1,43 @@
 <template>
   <div class="chat-page">
-    <v-card elevation="6" class="chat-shell">
-      <header class="chat-head">
+    <!-- 固定头部 -->
+    <header class="chat-head">
+      <div class="head-content">
         <div class="head-row primary">
+          <v-btn
+            icon="mdi-arrow-left"
+            variant="text"
+            class="back-btn"
+            @click="$router.back()"
+          ></v-btn>
           <span class="status-dot" :class="{ online: isConnected }"></span>
           <span class="title">彦祖聊天室</span>
+          <v-spacer></v-spacer>
+          <v-btn
+            icon="mdi-account-multiple"
+            variant="text"
+            class="members-btn"
+            @click="showMembers = true"
+          >
+            <v-badge
+              :content="onlineUsers.length.toString()"
+              :model-value="onlineUsers.length > 0"
+              color="primary"
+            >
+              <v-icon>mdi-account-multiple</v-icon>
+            </v-badge>
+          </v-btn>
         </div>
         <div class="head-row secondary">
           <span class="user-name">{{ userStore.userDisplayName }}</span>
-          <v-btn size="small" variant="text" class="online-btn" @click="showMembers = true">
-            <v-icon size="16" class="mr-1">mdi-account-multiple</v-icon>
-            {{ onlineUsers.length }} 人在线
-          </v-btn>
+          <span class="connection-status">{{ isConnected ? '已连接' : '连接中...' }}</span>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <section ref="messageContainer" class="chat-feed">
+    <!-- 消息区域 -->
+    <section ref="messageContainer" class="chat-feed">
+      <div class="feed-content">
         <div
           v-for="message in messages"
           :key="message.id"
@@ -45,18 +67,22 @@
             </template>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <footer class="chat-input-bar">
+    <!-- 固定底部输入框 -->
+    <footer class="chat-input-bar">
+      <div class="input-content">
         <div class="composer">
           <v-textarea
             v-model="draft"
             auto-grow
-            max-rows="3"
+            max-rows="4"
             rows="1"
-            variant="outlined"
+            variant="filled"
             placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
             @keydown.enter.prevent="handleEnter"
+            bg-color="#f5f5f5"
           ></v-textarea>
         </div>
         <v-btn
@@ -68,8 +94,8 @@
         >
           <v-icon>mdi-send</v-icon>
         </v-btn>
-      </footer>
-    </v-card>
+      </div>
+    </footer>
 
     <v-dialog v-model="showMembers" max-width="420">
       <v-card>
@@ -125,10 +151,18 @@ const sortedOnlineUsers = computed(() =>
   )
 )
 
-const scrollToBottom = () => {
+const scrollToBottom = (smooth = false) => {
   nextTick(() => {
     if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight
+      const container = messageContainer.value
+      if (smooth) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        })
+      } else {
+        container.scrollTop = container.scrollHeight
+      }
     }
   })
 }
@@ -170,34 +204,34 @@ const formatRelative = (value: string) =>
 
 <style scoped>
 .chat-page {
-  min-height: calc(100vh - 140px);
-  padding: 1rem;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.1), transparent 40%),
-    #f4f5fb;
-}
-
-.chat-shell {
-  width: min(960px, 100%);
-  border-radius: 32px;
-  padding: clamp(1rem, 3vw, 2rem);
-  display: flex;
-  flex-direction: column;
-  min-height: clamp(560px, calc(100vh - 180px), 960px);
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.15);
-  background-color: rgba(255, 255, 255, 0.95);
-}
-
-.chat-head {
-  margin-bottom: 1rem;
-  position: sticky;
+  background: #f5f5f7;
+  position: fixed;
   top: 0;
-  z-index: 3;
-  background: rgba(255, 255, 255, 0.95);
-  padding-bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+/* 固定头部 */
+.chat-head {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5e7;
+  padding-top: env(safe-area-inset-top);
+}
+
+.head-content {
+  padding: 8px 16px;
+  padding-top: calc(8px + env(safe-area-inset-top));
 }
 
 .head-row {
@@ -208,7 +242,18 @@ const formatRelative = (value: string) =>
 
 .head-row.primary {
   gap: 0.75rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
+  align-items: center;
+}
+
+.back-btn,
+.members-btn {
+  margin: 0;
+}
+
+.connection-status {
+  font-size: 0.75rem;
+  color: #8e8e93;
 }
 
 .status-dot {
@@ -217,6 +262,7 @@ const formatRelative = (value: string) =>
   border-radius: 50%;
   background: #9ca3af;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .status-dot.online {
@@ -225,30 +271,37 @@ const formatRelative = (value: string) =>
 }
 
 .title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
 .head-row.secondary {
-  font-size: 0.95rem;
-  color: rgba(15, 23, 42, 0.65);
+  font-size: 0.875rem;
+  color: #6e6e73;
 }
 
 .online-btn {
   text-transform: none;
   font-weight: 500;
+  font-size: 0.875rem;
 }
 
+/* 消息区域 */
 .chat-feed {
   flex: 1;
-  min-height: 0;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 24px;
-  padding: 1.2rem;
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
-  margin-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 73px;
+  margin-bottom: 72px;
+  background: #f5f5f7;
+  will-change: scroll-position;
+}
+
+.feed-content {
+  padding: 16px;
+  padding-bottom: 32px;
+  max-width: 100%;
 }
 
 .chat-line {
@@ -259,14 +312,17 @@ const formatRelative = (value: string) =>
   align-items: flex-start;
 }
 
-.chat-line:not(.system) .bubble {
-  max-width: 85%;
+.chat-line.mine .bubble {
+  background: #007AFF;
+  color: white;
 }
 
-@media (max-width: 768px) {
-  .chat-line:not(.system) .bubble {
-    max-width: 75%;
-  }
+.chat-line.mine .meta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-line.mine .content {
+  color: white;
 }
 
 .chat-line.mine {
@@ -292,8 +348,10 @@ const formatRelative = (value: string) =>
 .bubble {
   background: white;
   border-radius: 18px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-width: 75%;
+  word-wrap: break-word;
 }
 
 .meta {
@@ -310,38 +368,51 @@ const formatRelative = (value: string) =>
   line-height: 1.55;
 }
 
+/* 固定底部输入框 */
 .chat-input-bar {
-  margin-top: 0.5rem;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.75rem;
-  align-items: stretch;
-  position: sticky;
+  position: fixed;
   bottom: 0;
-  z-index: 3;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 28px;
-  padding: 0.5rem;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  background: #ffffff;
+  border-top: 1px solid #e5e5e7;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.input-content {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 16px;
 }
 
 .composer {
   flex: 1;
-  min-height: 64px;
+  min-height: 44px;
 }
 
-.composer :deep(.v-input),
-.composer :deep(.v-field) {
-  width: 100%;
-  height: 100%;
+.composer :deep(.v-textarea .v-field) {
+  border-radius: 22px;
+  padding: 8px 16px;
+  min-height: 44px;
+}
+
+.composer :deep(.v-textarea .v-field__input) {
+  padding: 0;
+  min-height: auto;
+  font-size: 16px;
+}
+
+.composer :deep(.v-textarea .v-field__outline) {
+  display: none;
 }
 
 .send-btn {
-  align-self: flex-end;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  margin-left: 0.5rem;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0;
 }
 
 .member-list {
@@ -372,44 +443,51 @@ const formatRelative = (value: string) =>
   padding: 1rem 0;
 }
 
+/* 移动端优化 */
 @media (max-width: 768px) {
-  .chat-shell {
-    min-height: calc(100vh - 100px);
-    max-height: calc(100vh - 60px);
-    padding: 0.75rem;
-    border-radius: 20px;
-  }
-
   .chat-page {
-    padding: 0.5rem;
+    background: #ffffff;
   }
 
-  .send-btn {
-    width: 44px;
-    height: 44px;
-  }
-
-  .chat-head {
-    padding: 0.25rem 0.25rem 0.75rem;
-  }
-
-  .chat-feed {
-    border-radius: 18px;
-    padding: 0.75rem;
-  }
-
-  .chat-input-bar {
-    padding: 0.5rem;
-    gap: 0.5rem;
+  .feed-content {
+    padding: 12px;
   }
 
   .chat-line {
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .bubble {
-    padding: 0.6rem 0.85rem;
+    max-width: 80%;
+    padding: 8px 12px;
+    font-size: 15px;
+  }
+
+  .meta {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .content {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .input-content {
+    padding: 8px 12px;
+  }
+
+  .composer :deep(.v-textarea .v-field__input) {
+    font-size: 16px;
+  }
+
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .head-row.secondary {
+    font-size: 0.813rem;
   }
 }
 </style>

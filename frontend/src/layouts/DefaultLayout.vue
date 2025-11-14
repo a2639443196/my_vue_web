@@ -142,7 +142,6 @@
     <!-- Bottom navigation for mobile -->
     <v-bottom-navigation
       v-if="isMobile && showBottomNav"
-      :model-value="activeBottomNav"
       grow
       color="primary"
       class="border-t"
@@ -151,7 +150,6 @@
         v-for="item in bottomNavItems"
         :key="item.to"
         :to="item.to"
-        :value="item.to"
         variant="text"
       >
         <v-icon>{{ item.icon }}</v-icon>
@@ -206,21 +204,6 @@ const bottomNavItems = computed(() => [
   { to: '/games', title: '游戏', icon: 'mdi-gamepad' },
 ])
 
-// Methods
-const resolveBottomNavValue = (path: string) => {
-  // 精确匹配路径，避免首页始终被选中的问题
-  const exactMatch = bottomNavItems.value.find(item => path === item.to)
-  if (exactMatch) return exactMatch.to
-
-  // 如果没有精确匹配，检查是否是子路径
-  const match = bottomNavItems.value.find(item => {
-    if (item.to === '/') return false  // 首页不做子路径匹配
-    return path.startsWith(`${item.to}/`)
-  })
-  return match ? match.to : null
-}
-
-const activeBottomNav = ref(resolveBottomNavValue(route.path))
 
 const toggleTheme = () => {
   themeStore.toggle()
@@ -236,14 +219,13 @@ const handleLogout = async () => {
   }
 }
 
-// Watch route changes to close drawer on mobile and keep bottom nav in sync
+// Watch route changes to close drawer on mobile
 watch(
   () => route.fullPath,
   () => {
     if (isMobile.value) {
       drawer.value = false
     }
-    activeBottomNav.value = resolveBottomNavValue(route.path)
   }
 )
 
