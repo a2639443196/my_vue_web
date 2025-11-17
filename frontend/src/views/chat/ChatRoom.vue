@@ -1,655 +1,132 @@
 <template>
-  <div
-    class="chat-page"
-    :class="{
-      'chat-page--mobile': shouldUseMobileLayout,
-      'chat-page--safe': hasSafeArea && shouldUseMobileLayout
-    }"
-  >
-    <!-- 固定头部 -->
-    <header class="chat-head" ref="headerRef">
-      <div class="head-content">
-        <div class="head-row primary">
-          <v-btn
-            icon="mdi-arrow-left"
-            variant="text"
-            class="back-btn"
-            @click="$router.back()"
-          ></v-btn>
-          <span class="status-dot" :class="{ online: isConnected }"></span>
-          <span class="title">彦祖聊天室</span>
-          <v-spacer></v-spacer>
-          <v-btn
-            icon="mdi-account-multiple"
-            variant="text"
-            class="members-btn"
-            @click="showMembers = true"
+  <div class="min-h-screen bg-[rgb(var(--background))] flex flex-col">
+    <TopNav title="聊天室" show-back show-profile />
+
+    <div class="px-6 py-3 bg-[rgb(var(--card))] border-b border-white/5">
+      <div class="flex items-center gap-2 max-w-md mx-auto">
+        <Icon icon="lucide:users" class="w-4 h-4 text-green-400" />
+        <span class="text-sm text-secondary">{{ onlineUsers.length }} 人在线</span>
+        <div class="flex -space-x-2 ml-auto">
+          <div
+            v-for="(avatar, i) in displayedAvatars"
+            :key="i"
+            class="w-8 h-8 rounded-full bg-[rgb(var(--primary))]/20 border-2 border-[rgb(var(--background))] flex items-center justify-center text-sm"
           >
-            <v-badge
-              :content="onlineUsers.length.toString()"
-              :model-value="onlineUsers.length > 0"
-              color="primary"
-            >
-              <v-icon>mdi-account-multiple</v-icon>
-            </v-badge>
-          </v-btn>
-        </div>
-        <div class="head-row secondary">
-          <span class="user-name">{{ userStore.userDisplayName }}</span>
-          <span class="connection-status">{{ isConnected ? '已连接' : '连接中...' }}</span>
+            {{ avatar }}
+          </div>
         </div>
       </div>
-    </header>
+    </div>
 
-    <!-- 消息区域 -->
-    <section
-      ref="messageContainer"
-      class="chat-feed"
-      :style="chatFeedStyle"
-    >
-      <div class="feed-content">
+    <div ref="feedRef" class="flex-1 overflow-y-auto px-6 py-4 max-w-md mx-auto w-full">
+      <div class="space-y-4">
         <div
-          v-for="message in messages"
-          :key="message.id"
-          :class="['chat-line', {
-            mine: message.userId === currentUserId && !message.isSystem,
-            system: message.isSystem
-          }]"
+          v-for="msg in messages"
+          :key="msg.id"
+          class="flex gap-3"
+          :class="msg.userId === currentUserId ? 'flex-row-reverse' : 'flex-row'"
         >
-          <div v-if="!message.isSystem" class="avatar">
-            <v-avatar size="36" color="primary">
-              <template v-if="!message.avatar">
-                {{ message.username.slice(0, 1).toUpperCase() }}
-              </template>
-              <img v-else :src="message.avatar" :alt="message.username" />
-            </v-avatar>
+          <div class="w-10 h-10 rounded-full bg-[rgb(var(--primary))]/20 flex items-center justify-center flex-shrink-0">
+            <span v-if="!msg.avatar">{{ (msg.username || 'U')[0].toUpperCase() }}</span>
+            <img v-else :src="msg.avatar" alt="" class="w-full h-full object-cover rounded-full" />
           </div>
-          <div class="bubble">
-            <template v-if="message.isSystem">
-              <div class="system-text">{{ message.content }}</div>
-            </template>
-            <template v-else>
-              <div class="meta">
-                <span class="author">{{ message.username }}</span>
-                <span class="time">{{ formatTime(message.createdAt) }}</span>
-              </div>
-              <div class="content">{{ message.content }}</div>
-            </template>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- 固定底部输入框 -->
-    <footer
-      class="chat-input-bar"
-      :class="{ 'chat-input-bar--safe': shouldUseMobileLayout && hasSafeArea }"
-      ref="inputBarRef"
-    >
-      <div class="input-content">
-        <div class="composer">
-          <v-textarea
-            v-model="draft"
-            auto-grow
-            max-rows="4"
-            rows="1"
-            variant="solo"
-            placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
-            @focus="handleComposerFocus"
-            @keydown.enter.prevent="handleEnter"
-            bg-color="#f5f5f7"
-            color="#1f2933"
-            base-color="#1f2933"
-            hide-details
-          ></v-textarea>
+          <div class="flex flex-col max-w-[70%]" :class="msg.userId === currentUserId ? 'items-end' : 'items-start'">
+            <div class="flex items-center gap-2 mb-1">
+              <span v-if="msg.userId !== currentUserId" class="text-sm text-[rgb(var(--muted-foreground))]">{{ msg.username }}</span>
+              <span class="caption">{{ formatTime(msg.createdAt) }}</span>
+            </div>
+            <div
+              class="px-4 py-3 rounded-2xl"
+              :class="
+                msg.userId === currentUserId
+                  ? 'bg-[rgb(var(--primary))] text-white rounded-tr-sm'
+                  : 'bg-[rgb(var(--card))] border border-white/5 rounded-tl-sm'
+              "
+            >
+              <p>{{ msg.content }}</p>
+            </div>
+          </div>
         </div>
-        <v-btn
-          color="primary"
-          class="send-btn"
+        <div ref="bottomRef" />
+      </div>
+    </div>
+
+    <div class="sticky bottom-0 safe-bottom px-6 py-4 bg-[rgb(var(--card))] border-t border-white/5">
+      <div class="max-w-md mx-auto flex gap-3">
+        <Input
+          v-model="draft"
+          placeholder="输入消息..."
+          class="flex-1 h-12 bg-[rgb(var(--surface))] border-white/10"
+          @keydown.enter.prevent="handleEnter"
+        />
+        <Button
+          class="h-12 w-12 gradient-primary p-0"
           :disabled="!draft.trim()"
           @click="sendMessage"
-          icon
-          elevation="0"
         >
-          <v-icon>mdi-send</v-icon>
-        </v-btn>
+          <Icon icon="lucide:send" class="w-5 h-5" />
+        </Button>
       </div>
-    </footer>
-
-    <v-dialog v-model="showMembers" max-width="420">
-      <v-card>
-        <v-card-title class="d-flex align-center justify-space-between">
-          <span>在线用户（{{ onlineUsers.length }}）</span>
-          <v-btn icon variant="text" @click="showMembers = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-        <v-divider></v-divider>
-        <v-card-text class="member-list">
-          <template v-if="onlineUsers.length">
-            <div v-for="user in sortedOnlineUsers" :key="user.id" class="member-item">
-              <v-avatar size="36" color="primary">
-                <template v-if="!user.avatar">
-                  {{ user.username.slice(0, 1).toUpperCase() }}
-                </template>
-                <img v-else :src="user.avatar" :alt="user.username" />
-              </v-avatar>
-              <div class="member-meta">
-                <div class="name">{{ user.username }}</div>
-                <div class="time">{{ formatRelative(user.lastActive) }}</div>
-              </div>
-            </div>
-          </template>
-          <div v-else class="empty">暂无其他用户在线</div>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { formatDistanceToNow, format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { useEventListener, useResizeObserver } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { Icon } from '@iconify/vue'
+import TopNav from '@/components/TopNav.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
 import { useChatStore } from '@/stores/chat'
 import { useUserStore } from '@/stores/user'
-import { useDeviceDetection } from '@/composables/useDeviceDetection'
 
 const chatStore = useChatStore()
 const userStore = useUserStore()
-const { messages, onlineUsers, connecting, room } = storeToRefs(chatStore)
-const { shouldUseMobileLayout, hasSafeArea } = useDeviceDetection()
 
 const draft = ref('')
-const showMembers = ref(false)
-const messageContainer = ref<HTMLElement | null>(null)
-const headerRef = ref<HTMLElement | null>(null)
-const inputBarRef = ref<HTMLElement | null>(null)
-const shouldStickToBottom = ref(true)
-const feedHeight = ref<number | null>(null)
-const currentUserId = computed(() => userStore.user?.id ?? 'guest')
-const isConnected = computed(() => !connecting.value && !!room.value)
-const sortedOnlineUsers = computed(() =>
-  [...onlineUsers.value].sort(
-    (a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime()
-  )
-)
+const feedRef = ref<HTMLElement | null>(null)
+const bottomRef = ref<HTMLElement | null>(null)
 
-const chatFeedStyle = computed(() => (feedHeight.value ? { height: `${feedHeight.value}px` } : {}))
+const { messages, onlineUsers } = chatStore
+const currentUserId = computed(() => userStore.profile?.id ?? 'guest')
 
-const recomputeFeedHeight = () => {
-  if (typeof window === 'undefined') return
-  const viewport = window.innerHeight
-  const head = headerRef.value?.offsetHeight ?? 0
-  const footer = inputBarRef.value?.offsetHeight ?? 0
-  const available = Math.max(viewport - head - footer, 240)
-  feedHeight.value = available
-}
+const displayedAvatars = computed(() => {
+  const fallback = ['👨', '👩', '🧑', '👴', '👵']
+  return onlineUsers.slice(0, 5).map(u => u.avatar || u.username?.[0]?.toUpperCase() || fallback[Math.floor(Math.random() * fallback.length)])
+})
 
-const scrollToBottom = (smooth = false) => {
+const scrollToBottom = () => {
   nextTick(() => {
-    if (messageContainer.value) {
-      const container = messageContainer.value
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
-      })
-    }
+    bottomRef.value?.scrollIntoView({ behavior: 'smooth' })
   })
 }
 
-const updateScrollAffinity = () => {
-  if (!messageContainer.value) return
-  const container = messageContainer.value
-  const distance =
-    container.scrollHeight - (container.scrollTop + container.clientHeight)
-  shouldStickToBottom.value = distance <= 96
+const handleEnter = () => {
+  if (!draft.value.trim()) return
+  sendMessage()
 }
 
 const sendMessage = () => {
   if (!draft.value.trim()) return
-  try {
-    chatStore.sendMessage(draft.value)
-    draft.value = ''
-    shouldStickToBottom.value = true
-    scrollToBottom(true)
-  } catch (error: any) {
-    console.error(error)
-  }
-}
-
-const handleEnter = (event: KeyboardEvent) => {
-  if (event.shiftKey) {
-    draft.value += '\n'
-    return
-  }
-  sendMessage()
-}
-
-watch(
-  () => messages.value.length,
-  (newVal, oldVal) => {
-    if (!newVal) return
-    if (shouldStickToBottom.value) {
-      const smooth = typeof oldVal === 'number' ? newVal - oldVal <= 5 : false
-      scrollToBottom(smooth)
-    }
-  }
-)
-
-onMounted(async () => {
-  await chatStore.initialize()
-  chatStore.fetchOnlineUsers().catch(() => undefined)
+  chatStore.sendMessage(draft.value.trim())
+  draft.value = ''
   scrollToBottom()
-  updateScrollAffinity()
-  recomputeFeedHeight()
-})
+}
 
-const stopScrollListener = useEventListener(
-  messageContainer,
-  'scroll',
-  () => updateScrollAffinity(),
-  { passive: true }
-)
-
-const { stop: stopResizeObserver } = useResizeObserver(messageContainer, () => {
-  if (shouldStickToBottom.value) {
-    scrollToBottom(true)
-  }
-})
-
-const { stop: stopHeaderObserver } = useResizeObserver(headerRef, () => {
-  recomputeFeedHeight()
-})
-
-const { stop: stopInputObserver } = useResizeObserver(inputBarRef, () => {
-  recomputeFeedHeight()
-})
-
-const stopWindowResize =
-  typeof window !== 'undefined'
-    ? useEventListener(window, 'resize', () => recomputeFeedHeight(), {
-        passive: true
-      })
-    : () => {}
-
-const handleComposerFocus = () => {
-  shouldStickToBottom.value = true
-  scrollToBottom(true)
+const formatTime = (value: string) => {
+  const date = new Date(value)
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 watch(
-  () => [shouldUseMobileLayout.value, hasSafeArea.value],
-  () => {
-    nextTick(() => recomputeFeedHeight())
-  }
+  () => messages.length,
+  () => scrollToBottom(),
+  { immediate: true }
 )
 
-onBeforeUnmount(() => {
-  stopScrollListener()
-  stopResizeObserver()
-  stopHeaderObserver()
-  stopInputObserver()
-  stopWindowResize()
+onMounted(() => {
+  chatStore.initialize()
+  scrollToBottom()
 })
-
-const formatTime = (value: string) => format(new Date(value), 'MM-dd HH:mm')
-const formatRelative = (value: string) =>
-  formatDistanceToNow(new Date(value), { addSuffix: true, locale: zhCN })
 </script>
-
-<style scoped>
-.chat-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: #0b1220;
-  width: 100%;
-  color: #e5e7eb;
-}
-
-.chat-page--mobile {
-  min-height: calc(100vh - 56px);
-  min-height: calc(100dvh - 56px);
-}
-
-.chat-page--safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* 头部 */
-.chat-head {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(15, 23, 42, 0.98);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-  flex-shrink: 0;
-}
-
-.head-content {
-  padding: 10px 14px;
-}
-
-.head-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.head-row.primary {
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
-  align-items: center;
-}
-
-.back-btn,
-.members-btn {
-  margin: 0;
-}
-
-.connection-status {
-  font-size: 0.813rem;
-  color: #cbd5e1;
-  font-weight: 500;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #9ca3af;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
-}
-
-.title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #e5e7eb;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.head-row.secondary {
-  font-size: 0.875rem;
-  color: #cbd5e1;
-}
-
-.user-name {
-  font-weight: 600;
-  color: #e5e7eb;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.online-btn {
-  text-transform: none;
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: #333333;
-}
-
-/* 消息区域 */
-.chat-feed {
-  flex: 0 0 auto;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  background: #0f172a;
-  will-change: scroll-position;
-  scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
-  scrollbar-gutter: stable both-edges;
-}
-
-.feed-content {
-  padding: 14px 16px;
-  max-width: 100%;
-}
-
-.chat-line {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
-  align-items: flex-start;
-}
-
-.chat-line.mine .bubble {
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.28), rgba(59, 130, 246, 0.34));
-  color: #f8fafc;
-  border-color: rgba(96, 165, 250, 0.4);
-}
-
-.chat-line.mine .meta {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.chat-line.mine .content {
-  color: white;
-  font-size: 16px;
-}
-
-.chat-line.mine {
-  justify-content: end;
-}
-
-.chat-line.mine .bubble {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(99, 102, 241, 0.18));
-}
-
-.chat-line.system {
-  grid-template-columns: 1fr;
-}
-
-.chat-line.system .bubble {
-  background: transparent;
-  text-align: center;
-  box-shadow: none;
-  color: #888888;
-  font-size: 0.875rem;
-}
-
-.bubble {
-  background: white;
-  border-radius: 16px;
-  padding: 9px 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-  max-width: 82%;
-  word-wrap: break-word;
-  background: #111827;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  color: #e5e7eb;
-  overflow-wrap: anywhere;
-}
-
-.meta {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #666666;
-  margin-bottom: 0.35rem;
-  word-break: break-word;
-}
-
-.content {
-  white-space: pre-wrap;
-  color: #e5e7eb;
-  font-size: 16px;
-  line-height: 1.5;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-/* 底部输入框 */
-.chat-input-bar {
-  flex-shrink: 0;
-  background: rgba(11, 18, 32, 0.98);
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
-}
-
-.chat-input-bar--safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.input-content {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 10px 14px;
-}
-
-.composer {
-  flex: 1;
-  min-height: 48px;
-}
-
-.composer :deep(.v-textarea .v-field) {
-  border-radius: 24px;
-  padding: 6px 16px;
-  min-height: 48px;
-  box-shadow: none;
-  background: #111827;
-}
-
-.composer :deep(.v-textarea .v-field__input) {
-  padding: 0;
-  min-height: auto;
-  font-size: 16px;
-  color: #e5e7eb;
-  opacity: 1;
-}
-
-.composer :deep(.v-textarea .v-field__input::placeholder) {
-  color: #9ca3af;
-  opacity: 1;
-}
-
-.composer :deep(.v-textarea .v-field__outline) {
-  display: none;
-}
-
-.send-btn {
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 50% !important;
-  flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
-}
-
-.member-list {
-  max-height: 420px;
-  overflow-y: auto;
-  padding-top: 1rem;
-}
-
-.member-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
-}
-
-.member-meta .name {
-  font-weight: 600;
-}
-
-.member-meta .time {
-  font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.55);
-}
-
-.empty {
-  text-align: center;
-  color: rgba(15, 23, 42, 0.45);
-  padding: 1rem 0;
-}
-
-/* 移动端优化 */
-@media (max-width: 768px) {
-  .chat-page {
-    background: #ffffff;
-  }
-
-  .feed-content {
-    padding: 10px 12px;
-  }
-
-  .chat-line {
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-
-  .bubble {
-    max-width: 88%;
-    padding: 8px 11px;
-    font-size: 15px;
-    border-radius: 14px;
-  }
-
-  .meta {
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
-
-  .content {
-    font-size: 15px;
-    line-height: 1.4;
-  }
-
-  .input-content {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-
-  .composer :deep(.v-textarea .v-field__input) {
-    font-size: 16px;
-  }
-
-  .title {
-    font-size: 1.125rem;
-  }
-
-  .head-row.secondary {
-    font-size: 0.813rem;
-  }
-
-  .head-content {
-    padding: 6px 8px;
-    padding-top: calc(6px + env(safe-area-inset-top));
-  }
-
-  :deep(.v-btn--icon) {
-    width: 42px;
-    height: 42px;
-  }
-}
-
-@media (max-width: 375px) {
-  .feed-content {
-    padding: 12px 10px 88px;
-  }
-
-  .input-content {
-    padding: 10px 12px;
-  }
-
-  .bubble {
-    padding: 6px 10px;
-  }
-}
-</style>

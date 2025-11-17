@@ -2,301 +2,197 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* Global styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  min-height: 100%;
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system,
-    BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #0b1220;
-  color: #e5e7eb;
-  line-height: 1.5;
-}
-
-#app {
-  min-height: 100vh;
-  overflow-x: hidden;
-  background: radial-gradient(circle at 15% 20%, rgba(96, 165, 250, 0.08), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(167, 139, 250, 0.08), transparent 40%),
-    #0b1220;
-}
-
-/* Scrollbar styles */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Safe area support for mobile devices */
+/* --- Dark mode design tokens from Figma --- */
 :root {
+  --background: 12 12 16;
+  --foreground: 250 250 250;
+  --card: 20 20 28;
+  --card-foreground: 250 250 250;
+  --card-elevated: 28 28 38;
+  --surface: 16 16 22;
+  --primary: 99 102 241;
+  --primary-foreground: 255 255 255;
+  --secondary: 139 92 246;
+  --secondary-foreground: 255 255 255;
+  --accent: 34 211 238;
+  --accent-foreground: 12 12 16;
+  --success: 34 197 94;
+  --warning: 251 191 36;
+  --danger: 239 68 68;
+  --muted: 39 39 54;
+  --muted-foreground: 163 163 163;
+  --border: 39 39 54;
+  --input: 39 39 54;
+  --ring: 99 102 241;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --text-primary: 250 250 250;
+  --text-secondary: 199 199 199;
+  --text-tertiary: 163 163 163;
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
-/* Animation utilities */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-color: rgba(var(--border), 1);
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+html,
+body {
+  min-height: 100%;
+  background: rgb(var(--background));
+  color: rgb(var(--text-primary));
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "HarmonyOS Sans", system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+#app {
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 0%, rgba(var(--primary), 0.08), transparent 35%),
+    radial-gradient(circle at 90% 10%, rgba(var(--secondary), 0.08), transparent 35%),
+    rgb(var(--background));
+  color: rgb(var(--text-primary));
 }
 
-@keyframes scaleIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+/* Typography scale */
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: rgb(var(--text-primary));
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: rgb(var(--text-primary));
 }
 
-/* Component styles */
-.card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgb(var(--text-primary));
 }
 
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgb(var(--text-primary));
 }
 
-.gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgb(var(--text-primary));
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+small,
+.caption {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgb(var(--text-secondary));
 }
 
-/* Touch friendly buttons */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
+.text-primary {
+  color: rgb(var(--text-primary));
 }
 
-/* Mobile specific adjustments */
-@media (max-width: 768px) {
-  /* Minimize container padding */
-  .container,
-  .v-container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-
-  /* Even smaller for very small screens */
-  @media (max-width: 375px) {
-    .v-container {
-      padding-left: 4px !important;
-      padding-right: 4px !important;
-    }
-  }
-
-  /* Remove margins on mobile for full width content */
-  .full-width-mobile {
-    margin-left: -8px !important;
-    margin-right: -8px !important;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-
-  .text-responsive {
-    font-size: clamp(0.875rem, 2.5vw, 1rem);
-  }
-
-  .grid-responsive {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-  }
-
-  /* Prevent zoom on input focus */
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="tel"],
-  input[type="number"],
-  select,
-  textarea {
-    font-size: 16px;
-  }
-
-  /* Improve mobile touch targets */
-  .v-btn,
-  .v-chip,
-  button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Mobile-friendly cards with minimal spacing */
-  .v-card {
-    border-radius: 12px !important;
-    margin: 4px 0;
-  }
-
-  /* Make tables scrollable */
-  .v-data-table {
-    overflow-x: auto;
-    display: block;
-    white-space: nowrap;
-  }
-
-  /* Optimize form inputs for mobile */
-  .v-text-field .v-field {
-    border-radius: 8px !important;
-  }
-
-  .v-select .v-field {
-    border-radius: 8px !important;
-  }
-
-  .v-textarea .v-field {
-    border-radius: 8px !important;
-  }
-
-  /* Reduce card padding */
-  .v-card .v-card-text {
-    padding: 12px !important;
-  }
-
-  /* Optimize list spacing */
-  .v-list-item {
-    min-height: 48px;
-    padding: 0 8px;
-  }
-
-  /* Minimize sheet/dialog padding */
-  .v-sheet,
-  .v-dialog .v-card {
-    padding: 8px;
-  }
-
-  /* Optimize spacing */
-  .ma-2 { margin: 8px !important; }
-  .ma-3 { margin: 12px !important; }
-  .ma-4 { margin: 16px !important; }
-
-  .pa-2 { padding: 8px !important; }
-  .pa-3 { padding: 12px !important; }
-  .pa-4 { padding: 16px !important; }
-
-  .my-2 { margin-top: 8px !important; margin-bottom: 8px !important; }
-  .my-3 { margin-top: 12px !important; margin-bottom: 12px !important; }
-  .my-4 { margin-top: 16px !important; margin-bottom: 16px !important; }
-
-  .px-2 { padding-left: 8px !important; padding-right: 8px !important; }
-  .px-3 { padding-left: 12px !important; padding-right: 12px !important; }
-  .px-4 { padding-left: 16px !important; padding-right: 16px !important; }
+.text-secondary {
+  color: rgb(var(--text-secondary));
 }
 
-/* Tablet specific adjustments */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .container-tablet {
-    max-width: 90%;
-    margin: 0 auto;
-  }
+.text-tertiary {
+  color: rgb(var(--text-tertiary));
 }
 
-/* Desktop specific adjustments */
-@media (min-width: 1025px) {
-  .container-desktop {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+/* Glass and gradients */
+.glass {
+  background: rgba(var(--card), 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--border), 0.6);
 }
 
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  body {
-    font-size: 12pt;
-    line-height: 1.5;
-  }
-
-  a {
-    text-decoration: none;
-    color: inherit;
-  }
+.glass-strong {
+  background: rgba(var(--card), 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--border), 0.8);
 }
 
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .card-hover {
-    border: 2px solid currentColor;
-  }
+.glow-primary {
+  box-shadow: 0 0 20px rgba(var(--primary), 0.3);
 }
 
-/* Reduced motion */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(var(--accent), 0.3);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, rgb(var(--primary)), rgb(var(--secondary)));
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--primary)));
+}
+
+.gradient-dark {
+  background: linear-gradient(180deg, rgb(var(--card)), rgb(var(--background)));
+}
+
+/* Card shadows */
+.shadow-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Safe areas */
+.safe-top {
+  padding-top: max(var(--safe-area-inset-top), 1rem);
+}
+
+.safe-bottom {
+  padding-bottom: max(var(--safe-area-inset-bottom), 1rem);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* Motion + transitions */
+.transition-base {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

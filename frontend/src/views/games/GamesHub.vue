@@ -1,236 +1,166 @@
 <template>
-  <div class="games-hub">
-    <header class="hub-header">
-      <div>
-        <h1>专注训练中心</h1>
-        <p>通过舒尔特方格和反应力小游戏，训练视野扩展、注意力与反应速度，刷新个人最佳成绩。</p>
+  <div class="min-h-screen bg-[rgb(var(--background))]">
+    <TopNav title="训练游戏" show-back show-profile />
+
+    <main class="px-6 py-6 max-w-md mx-auto space-y-6 safe-bottom">
+      <div class="grid grid-cols-3 gap-4">
+        <GlassCard class="text-center">
+          <Icon icon="lucide:trophy" class="w-6 h-6 mx-auto mb-2 text-yellow-400" />
+          <div class="text-2xl mb-1">{{ totalPlays }}</div>
+          <div class="caption">总次数</div>
+        </GlassCard>
+        <GlassCard class="text-center">
+          <Icon icon="lucide:clock" class="w-6 h-6 mx-auto mb-2 text-blue-400" />
+          <div class="text-2xl mb-1">{{ totalDuration }}</div>
+          <div class="caption">总时长</div>
+        </GlassCard>
+        <GlassCard class="text-center">
+          <Icon icon="lucide:brain" class="w-6 h-6 mx-auto mb-2 text-purple-400" />
+          <div class="text-2xl mb-1">{{ totalScore }}</div>
+          <div class="caption">总得分</div>
+        </GlassCard>
       </div>
-      <v-btn color="primary" variant="outlined" @click="goProfile">
-        查看我的数据
-      </v-btn>
-    </header>
 
-    <div class="cards">
-      <v-card class="game-card" elevation="4">
-        <div class="card-hero schulte">
-          <v-icon size="36">mdi-grid-large</v-icon>
-        </div>
-        <div class="card-body">
-          <h2>舒尔特方格</h2>
-          <p>强化注意力和视觉搜索能力，从 4x4 到 6x6 难度随心切换。</p>
-          <div class="card-stats">
-            <div>
-              <span>最佳成绩</span>
-              <strong>{{ bestSchulte ? `${bestSchulte.score.toFixed(2)} 秒` : '尚未挑战' }}</strong>
+      <section>
+        <h4 class="mb-4">选择游戏</h4>
+        <div class="space-y-4">
+          <GlassCard
+            v-for="game in games"
+            :key="game.id"
+            hover
+            @click="navigateTo(game.id)"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 text-white" :class="game.gradient">
+                <Icon :icon="game.icon" class="w-8 h-8" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 class="mb-1">{{ game.name }}</h4>
+                <p class="caption">{{ game.description }}</p>
+                <div class="flex items-center gap-4 mt-2">
+                  <span class="text-sm text-[rgb(var(--primary))]">最佳: {{ game.best }}</span>
+                  <span class="caption">{{ game.plays }} 次</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span>最近成绩</span>
-              <strong>{{ latestSchulte?.summary || '暂无记录' }}</strong>
+          </GlassCard>
+        </div>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h4>排行榜</h4>
+          <button class="text-sm text-[rgb(var(--primary))] hover:underline">查看全部</button>
+        </div>
+        <GlassCard>
+          <div v-if="leaders.length" class="space-y-3">
+            <div v-for="entry in leaders" :key="entry.rank" class="flex items-center gap-4">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                :class="entry.rank === 1 ? 'bg-yellow-500' : entry.rank === 2 ? 'bg-gray-400' : 'bg-orange-600'"
+              >
+                {{ entry.rank }}
+              </div>
+              <div class="w-10 h-10 rounded-full bg-[rgb(var(--primary))]/20 flex items-center justify-center">
+                {{ entry.avatar || entry.username[0]?.toUpperCase() }}
+              </div>
+              <div class="flex-1">
+                <p>{{ entry.username }}</p>
+              </div>
+              <div class="text-[rgb(var(--primary))]">
+                {{ entry.score }}
+              </div>
             </div>
           </div>
-          <v-btn color="primary" @click="goGame('SchulteGrid')">
-            开始训练
-            <v-icon end>mdi-arrow-right</v-icon>
-          </v-btn>
-        </div>
-      </v-card>
-
-      <v-card class="game-card" elevation="4">
-        <div class="card-hero reaction">
-          <v-icon size="36">mdi-flash</v-icon>
-        </div>
-        <div class="card-body">
-          <h2>反应力测试</h2>
-          <p>挑战手眼反应速度，连续 5 次统计平均值，看看你的神经反射速度有多快。</p>
-          <div class="card-stats">
-            <div>
-              <span>最佳成绩</span>
-              <strong>{{ bestReaction ? `${Math.round(bestReaction.score)} ms` : '尚未测试' }}</strong>
-            </div>
-            <div>
-              <span>最近成绩</span>
-              <strong>{{ latestReaction?.summary || '暂无记录' }}</strong>
-            </div>
-          </div>
-          <v-btn color="primary" @click="goGame('ReactionTime')">
-            立即测试
-            <v-icon end>mdi-arrow-right</v-icon>
-          </v-btn>
-        </div>
-      </v-card>
-    </div>
+          <div v-else class="text-center text-secondary text-sm">暂无排行榜数据</div>
+        </GlassCard>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { Icon } from '@iconify/vue'
+import TopNav from '@/components/TopNav.vue'
+import GlassCard from '@/components/GlassCard.vue'
+import { useGamesStore } from '@/stores/games'
 
 const router = useRouter()
-const userStore = useUserStore()
+const gamesStore = useGamesStore()
+const currentGameType = ref<'schulte' | 'reaction' | 'memory' | 'sudoku'>('schulte')
 
-const bestSchulte = computed(() => userStore.bestSchulteRecord)
-const bestReaction = computed(() => userStore.bestReactionRecord)
-const latestSchulte = computed(() => userStore.gameRecords.find(record => record.game === 'schulte'))
-const latestReaction = computed(() => userStore.gameRecords.find(record => record.game === 'reaction'))
+const games = computed(() => {
+  const summaries = gamesStore.summaries
+  return [
+    {
+      id: 'schulte' as const,
+      name: '舒尔特方格',
+      description: '提升注意力和视觉搜索能力',
+      icon: 'lucide:grid-3x3',
+      gradient: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+      best: summaries.schulte?.bestScore ?? '--',
+      plays: summaries.schulte?.totalPlays ?? 0
+    },
+    {
+      id: 'reaction' as const,
+      name: '反应速度测试',
+      description: '测试你的反应时间',
+      icon: 'lucide:zap',
+      gradient: 'bg-gradient-to-br from-yellow-500 to-orange-500',
+      best: summaries.reaction?.bestScore ?? '--',
+      plays: summaries.reaction?.totalPlays ?? 0
+    },
+    {
+      id: 'memory' as const,
+      name: '记忆翻牌',
+      description: '锻炼短期记忆能力',
+      icon: 'lucide:brain',
+      gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
+      best: summaries.memory?.bestScore ?? '--',
+      plays: summaries.memory?.totalPlays ?? 0
+    },
+    {
+      id: 'sudoku' as const,
+      name: '数独挑战',
+      description: '逻辑思维训练',
+      icon: 'lucide:table',
+      gradient: 'bg-gradient-to-br from-green-500 to-teal-500',
+      best: summaries.sudoku?.bestScore ?? '--',
+      plays: summaries.sudoku?.totalPlays ?? 0
+    }
+  ]
+})
 
-const goGame = (name: string) => {
-  router.push({ name })
+const leaders = computed(() => gamesStore.leaderboards[currentGameType.value])
+
+const totalPlays = computed(() => gamesStore.userSummary?.totals.plays ?? 0)
+const totalDuration = computed(() => {
+  const ms = gamesStore.userSummary?.totals.durationMs ?? 0
+  if (!ms) return '0h'
+  return `${(ms / 3600000).toFixed(1)}h`
+})
+const totalScore = computed(() => {
+  const sums = Object.values(gamesStore.summaries).reduce((acc, cur) => acc + (cur?.bestScore ?? 0), 0)
+  return sums || 0
+})
+
+const navigateTo = (id: string) => {
+  if (id === 'schulte') router.push({ name: 'SchulteGrid' })
+  else if (id === 'reaction') router.push({ name: 'ReactionTime' })
+  else if (id === 'memory') router.push({ name: 'MemoryFlip' })
+  else if (id === 'sudoku') router.push({ name: 'Sudoku' })
 }
 
-const goProfile = () => router.push({ name: 'Profile' })
+onMounted(async () => {
+  await Promise.all([
+    gamesStore.fetchUserSummary(),
+    gamesStore.fetchSummary('schulte'),
+    gamesStore.fetchSummary('reaction'),
+    gamesStore.fetchSummary('memory'),
+    gamesStore.fetchSummary('sudoku'),
+    gamesStore.fetchLeaderboard(currentGameType.value)
+  ])
+})
 </script>
-
-<style scoped>
-.games-hub {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: clamp(1.25rem, 4vw, 2rem);
-  background: #0b1220;
-  color: #e5e7eb;
-}
-
-.hub-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-}
-
-.hub-header h1 {
-  margin: 0 0 0.5rem;
-}
-
-.hub-header p {
-  margin: 0;
-  color: rgba(226, 232, 240, 0.7);
-  max-width: 720px;
-}
-
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.game-card {
-  border-radius: 24px;
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  background: #0f172a;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
-}
-
-.card-hero {
-  height: 140px;
-  display: grid;
-  place-items: center;
-  color: white;
-}
-
-.card-hero.schulte {
-  background: linear-gradient(135deg, #5c6bc0 0%, #42a5f5 100%);
-}
-
-.card-hero.reaction {
-  background: linear-gradient(135deg, #ff7043 0%, #ffca28 100%);
-}
-
-.card-body {
-  padding: 1.5rem;
-  display: grid;
-  gap: 1rem;
-}
-
-.card-body p {
-  margin: 0;
-  color: rgba(226, 232, 240, 0.8);
-}
-
-.card-stats {
-  display: grid;
-  gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 0.75rem 1rem;
-  border-radius: 16px;
-}
-
-.card-stats span {
-  display: block;
-  color: rgba(226, 232, 240, 0.7);
-}
-
-.card-stats strong {
-  font-size: 1.1rem;
-}
-
-@media (max-width: 768px) {
-  .games-hub {
-    gap: 1rem;
-    padding: 8px;
-  }
-
-  .hub-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
-  .hub-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .cards {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .game-card {
-    border-radius: 16px;
-  }
-
-  .card-hero {
-    height: 100px;
-  }
-
-  .card-body {
-    padding: 12px;
-  }
-
-  .card-stats {
-    padding: 8px 12px;
-    gap: 0.5rem;
-  }
-
-  .card-stats strong {
-    font-size: 0.95rem;
-  }
-
-  .card-body p {
-    font-size: 0.875rem;
-  }
-}
-
-/* 超小屏幕优化 */
-@media (max-width: 375px) {
-  .game-card {
-    border-radius: 12px;
-  }
-
-  .card-hero {
-    height: 80px;
-  }
-
-  .card-body {
-    padding: 10px;
-  }
-
-  .card-stats {
-    padding: 6px 10px;
-  }
-}
-</style>

@@ -1,341 +1,201 @@
 <template>
-  <div class="reaction-view">
-    <v-card class="main-card" elevation="6">
-      <v-card-title class="d-flex align-center justify-space-between">
-        <div>
-          <h1 class="text-h5 font-weight-bold mb-1">反应力测试</h1>
-          <p class="text-body-2 text-medium-emphasis">
-            当屏幕变为亮绿色时立即点击，连续测试 {{ totalAttempts }} 次，获得平均与最佳成绩。
-          </p>
-        </div>
-        <v-btn color="primary" @click="startTest" :disabled="state === 'waiting'">
-          <v-icon start>mdi-reload</v-icon>
-          {{ state === 'idle' ? '开始测试' : '重新开始' }}
-        </v-btn>
-      </v-card-title>
+  <div class="min-h-screen bg-[rgb(var(--background))]">
+    <TopNav title="反应速度测试" show-back />
 
-      <v-card-text>
-        <div class="test-panel" :class="state" @click="handleClick">
-          <div class="panel-content">
-            <template v-if="state === 'idle'">
-              <span class="hint">点击“开始测试”后等待屏幕变绿</span>
-            </template>
-            <template v-else-if="state === 'waiting'">
-              <span class="hint">准备...请等待绿色提示</span>
-            </template>
-            <template v-else-if="state === 'ready'">
-              <span class="action">点击！</span>
-            </template>
-            <template v-else-if="state === 'cooldown'">
-              <span class="hint">稍等片刻...</span>
-            </template>
-            <template v-else>
-              <span class="result">{{ lastReaction }} ms</span>
-              <span class="hint">第 {{ attempts.length }} 次</span>
-            </template>
-          </div>
-        </div>
+    <main class="px-6 py-6 max-w-md mx-auto space-y-6 safe-bottom">
+      <div class="grid grid-cols-3 gap-4">
+        <GlassCard class="text-center">
+          <div class="caption mb-1">本次</div>
+          <div class="text-2xl text-[rgb(var(--accent))]">{{ reactionTimeLabel }}</div>
+        </GlassCard>
+        <GlassCard class="text-center">
+          <div class="caption mb-1">最佳</div>
+          <div class="text-2xl text-green-400">{{ bestTimeLabel }}</div>
+        </GlassCard>
+        <GlassCard class="text-center">
+          <div class="caption mb-1">平均</div>
+          <div class="text-2xl text-[rgb(var(--primary))]">{{ averageLabel }}</div>
+        </GlassCard>
+      </div>
 
-        <div class="attempts">
-          <h3>成绩记录</h3>
-          <div class="chips">
-            <v-chip
-              v-for="(value, index) in attempts"
-              :key="index"
-              color="primary"
-              variant="outlined"
-            >
-              第 {{ index + 1 }} 次：{{ value }} ms
-            </v-chip>
-          </div>
-          <div class="stats" v-if="attempts.length">
-            <div>
-              <span>平均反应</span>
-              <strong>{{ averageReaction }} ms</strong>
+      <GlassCard class="min-h-[400px]">
+        <div
+          class="h-[400px] rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-base"
+          :class="areaClass"
+          @click="handleAreaClick"
+        >
+          <template v-if="state === 'waiting'">
+            <Icon icon="lucide:zap" class="w-16 h-16 mx-auto mb-4 text-[rgb(var(--primary))]" />
+            <h3 class="mb-2">准备开始</h3>
+            <p class="text-[rgb(var(--muted-foreground))]">点击区域开始测试</p>
+          </template>
+
+          <template v-else-if="state === 'ready'">
+            <div class="text-center">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500 animate-pulse" />
+              <h3 class="text-red-400">等待...</h3>
+              <p class="text-[rgb(var(--muted-foreground))] mt-2">准备点击</p>
             </div>
-            <div>
-              <span>最佳成绩</span>
-              <strong>{{ bestReaction }} ms</strong>
-            </div>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
+          </template>
 
-    <v-card elevation="4">
-      <v-card-title>历史成绩</v-card-title>
-      <v-card-text>
-        <div v-if="history.length" class="history-list">
-          <div v-for="record in history" :key="record.id" class="history-item">
-            <div class="time">{{ formatDate(record.createdAt) }}</div>
-            <div class="summary">{{ record.summary }}</div>
+          <template v-else-if="state === 'go'">
+            <div class="text-center animate-pulse">
+              <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-green-500 glow-primary" />
+              <h2 class="text-green-400">点击!</h2>
+            </div>
+          </template>
+
+          <template v-else-if="state === 'tooEarly'">
+            <div class="text-center">
+              <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500" />
+              <h3 class="text-red-400 mb-2">太早了!</h3>
+              <p class="text-[rgb(var(--muted-foreground))] mb-6">等绿色出现后再点击</p>
+              <Button @click.stop="handleReset" variant="outline" class="border-white/10">
+                重新开始
+              </Button>
+            </div>
+          </template>
+
+          <template v-else-if="state === 'result'">
+            <div class="text-center">
+              <Icon icon="lucide:zap" class="w-16 h-16 mx-auto mb-4 text-yellow-400" />
+              <div class="text-5xl mb-2">{{ reactionTime }}ms</div>
+              <div class="text-xl mb-6" :class="rating.color">
+                {{ rating.label }}
+              </div>
+              <Button @click.stop="handleReset" class="gradient-primary">
+                <Icon icon="lucide:rotate-ccw" class="w-5 h-5 mr-2" />
+                再测一次
+              </Button>
+            </div>
+          </template>
+        </div>
+      </GlassCard>
+
+      <GlassCard v-if="attempts.length">
+        <h4 class="mb-4">最近记录</h4>
+        <div class="space-y-2">
+          <div v-for="(time, idx) in attempts.slice().reverse()" :key="idx" class="flex items-center justify-between">
+            <span class="caption">第 {{ attempts.length - idx }} 次</span>
+            <span :class="getRating(time).color">{{ time }}ms</span>
           </div>
         </div>
-        <div v-else class="empty">暂无历史成绩，完成一次测试即可记录。</div>
-      </v-card-text>
-    </v-card>
+      </GlassCard>
+
+      <GlassCard>
+        <h4 class="mb-3">测试说明</h4>
+        <ul class="space-y-2 text-sm text-secondary">
+          <li>• 点击开始后等待绿色信号</li>
+          <li>• 看到绿色后立即点击</li>
+          <li>• 多次测试获得更准确的平均值</li>
+          <li>• 正常反应时间在 200-300ms 之间</li>
+        </ul>
+      </GlassCard>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { format } from 'date-fns'
-import { useUserStore } from '@/stores/user'
-import { useNotificationStore } from '@/stores/notification'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import TopNav from '@/components/TopNav.vue'
+import GlassCard from '@/components/GlassCard.vue'
+import Button from '@/components/ui/Button.vue'
+import { useGamesStore } from '@/stores/games'
 
-const userStore = useUserStore()
-const notificationStore = useNotificationStore()
+type GameState = 'waiting' | 'ready' | 'go' | 'result' | 'tooEarly'
 
-const totalAttempts = 5
-const state = ref<'idle' | 'waiting' | 'ready' | 'result' | 'cooldown'>('idle')
+const gamesStore = useGamesStore()
+
+const state = ref<GameState>('waiting')
+const reactionTime = ref<number | null>(null)
 const attempts = ref<number[]>([])
-const waitTimeout = ref<number | null>(null)
-const cooldownTimeout = ref<number | null>(null)
-const startTimestamp = ref<number | null>(null)
-const lastReaction = ref<number>(0)
+const timerRef = ref<number | undefined>()
+const startRef = ref<number>(0)
 
-const averageReaction = computed(() => {
-  if (!attempts.value.length) return 0
-  const total = attempts.value.reduce((sum, value) => sum + value, 0)
-  return Math.round(total / attempts.value.length)
-})
+const bestSummary = computed(() => gamesStore.summaries.reaction)
 
-const bestReaction = computed(() => {
-  if (!attempts.value.length) return 0
-  return Math.min(...attempts.value)
-})
-
-const history = computed(() =>
-  userStore.gameRecords.filter(record => record.game === 'reaction').slice(0, 6)
-)
-
-const startTest = () => {
-  attempts.value = []
-  state.value = 'waiting'
-  scheduleReady()
+const handleAreaClick = () => {
+  if (state.value === 'waiting') {
+    startReady()
+    return
+  }
+  if (state.value === 'ready') {
+    tooEarly()
+    return
+  }
+  if (state.value === 'go') {
+    finish()
+  }
 }
 
-const scheduleReady = () => {
-  clearTimers()
-  const delay = 1000 + Math.random() * 2000
-  waitTimeout.value = window.setTimeout(() => {
-    state.value = 'ready'
-    startTimestamp.value = performance.now()
+const startReady = () => {
+  state.value = 'ready'
+  const delay = 2000 + Math.random() * 3000
+  timerRef.value = window.setTimeout(() => {
+    state.value = 'go'
+    startRef.value = Date.now()
   }, delay)
 }
 
-const handleClick = () => {
-  if (state.value === 'waiting') {
-    notificationStore.showWarning('太心急啦！等绿色提示出现再点。')
-    startTest()
-    return
-  }
+const tooEarly = () => {
+  clearTimer()
+  state.value = 'tooEarly'
+}
 
-  if (state.value === 'ready') {
-    const end = performance.now()
-    const reaction = Math.round(end - (startTimestamp.value || end))
-    lastReaction.value = reaction
-    attempts.value.push(reaction)
-    state.value = 'result'
+const finish = async () => {
+  const time = Date.now() - startRef.value
+  reactionTime.value = time
+  attempts.value = [...attempts.value, time].slice(-5)
+  state.value = 'result'
+  clearTimer()
+  await gamesStore.saveResult({ gameType: 'reaction', score: time, durationMs: time })
+}
 
-    if (attempts.value.length >= totalAttempts) {
-      finishTest()
-    } else {
-      cooldownTimeout.value = window.setTimeout(() => {
-        state.value = 'waiting'
-        scheduleReady()
-      }, 800)
-    }
-    return
-  }
+const handleReset = () => {
+  state.value = 'waiting'
+  reactionTime.value = null
+}
 
-  if (state.value === 'idle') {
-    startTest()
+const clearTimer = () => {
+  if (timerRef.value) {
+    clearTimeout(timerRef.value)
+    timerRef.value = undefined
   }
 }
 
-const finishTest = () => {
-  clearTimers()
-  state.value = 'cooldown'
-  const best = bestReaction.value
-  const average = averageReaction.value
-  const summary = `最佳 ${best} ms · 平均 ${average} ms`
-
-  userStore.recordGameResult('reaction', {
-    score: best,
-    unit: '毫秒',
-    summary,
-    details: {
-      attempts: [...attempts.value],
-      average
-    }
-  })
-
-  notificationStore.showSuccess('反应力成绩已记录')
-  cooldownTimeout.value = window.setTimeout(() => {
-    state.value = 'idle'
-  }, 1500)
+const getRating = (time: number) => {
+  if (time < 200) return { label: '极快', color: 'text-green-400' }
+  if (time < 250) return { label: '很快', color: 'text-blue-400' }
+  if (time < 300) return { label: '快速', color: 'text-cyan-400' }
+  if (time < 350) return { label: '一般', color: 'text-yellow-400' }
+  return { label: '需要练习', color: 'text-orange-400' }
 }
 
-const clearTimers = () => {
-  if (waitTimeout.value) {
-    clearTimeout(waitTimeout.value)
-    waitTimeout.value = null
-  }
-  if (cooldownTimeout.value) {
-    clearTimeout(cooldownTimeout.value)
-    cooldownTimeout.value = null
-  }
-}
+const rating = computed(() => (reactionTime.value ? getRating(reactionTime.value) : { label: '', color: '' }))
 
-onBeforeUnmount(() => {
-  clearTimers()
+const reactionTimeLabel = computed(() => (reactionTime.value ? `${reactionTime.value}ms` : '-'))
+const bestTimeLabel = computed(() => {
+  const best = bestSummary.value?.bestScore
+  return best ? `${best}ms` : '-'
+})
+const averageLabel = computed(() => {
+  if (!attempts.value.length) return bestSummary.value?.averageScore ? `${bestSummary.value.averageScore}ms` : '-'
+  const avg = Math.round(attempts.value.reduce((a, b) => a + b, 0) / attempts.value.length)
+  return `${avg}ms`
 })
 
-const formatDate = (date: string) => format(new Date(date), 'MM月dd日 HH:mm')
+const areaClass = computed(() => {
+  if (state.value === 'waiting') return 'bg-[rgb(var(--primary))]/10 border-2 border-[rgb(var(--primary))]/30'
+  if (state.value === 'ready') return 'bg-red-500/10 border-2 border-red-500/30'
+  if (state.value === 'go') return 'bg-green-500/20 border-2 border-green-500 glow-primary'
+  if (state.value === 'tooEarly') return 'bg-red-500/20 border-2 border-red-500'
+  return 'bg-[rgb(var(--card))]'
+})
+
+onMounted(async () => {
+  await gamesStore.fetchSummary('reaction')
+})
+
+onBeforeUnmount(clearTimer)
 </script>
-
-<style scoped>
-.reaction-view {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.main-card {
-  border-radius: 24px;
-}
-
-.test-panel {
-  border-radius: 20px;
-  height: 260px;
-  padding: 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1.5rem;
-  transition: background 0.3s ease;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.04);
-  text-align: center;
-}
-
-.test-panel.waiting {
-  background: rgba(255, 193, 7, 0.2);
-}
-
-.test-panel.ready {
-  background: rgba(76, 175, 80, 0.35);
-}
-
-.test-panel.cooldown {
-  background: rgba(96, 125, 139, 0.2);
-}
-
-.test-panel.result {
-  background: rgba(63, 81, 181, 0.18);
-}
-
-.panel-content {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-width: 420px;
-  text-wrap: balance;
-  word-break: break-word;
-}
-
-.panel-content .hint {
-  font-size: 1rem;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.panel-content .action {
-  font-size: 2.8rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.panel-content .result {
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.attempts {
-  margin-top: 2rem;
-}
-
-.attempts h3 {
-  margin-bottom: 0.75rem;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.stats {
-  margin-top: 1.25rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-.stats span {
-  display: block;
-  color: rgba(0, 0, 0, 0.5);
-  margin-bottom: 0.4rem;
-}
-
-.stats strong {
-  font-size: 1.4rem;
-}
-
-.history-list {
-  display: grid;
-  gap: 1rem;
-}
-
-.history-item {
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.history-item .time {
-  font-size: 0.85rem;
-  color: rgba(0, 0, 0, 0.55);
-}
-
-.history-item .summary {
-  margin-top: 0.25rem;
-  font-weight: 600;
-}
-
-.empty {
-  text-align: center;
-  color: rgba(0, 0, 0, 0.45);
-  padding: 1rem 0;
-}
-
-@media (max-width: 768px) {
-  .reaction-view {
-    gap: 1.25rem;
-  }
-
-  .main-card {
-    border-radius: 18px;
-  }
-
-  .test-panel {
-    height: 200px;
-  }
-
-  .chips :deep(.v-chip) {
-    font-size: 0.85rem;
-  }
-}
-</style>

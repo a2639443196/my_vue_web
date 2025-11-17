@@ -1,587 +1,187 @@
 <template>
-  <div class="water-page">
-    <section class="hydration-hero">
-      <div class="hero-info">
-        <p class="eyebrow">饮水进度</p>
-        <h1>今日已喝 {{ todayTotal }} ml</h1>
-        <p class="description">
-          选择常用饮品或自定义容量，保持全天补水节奏。支持咖啡、能量饮料等多种饮品记录。
-        </p>
+  <div class="min-h-screen bg-[rgb(var(--background))]">
+    <TopNav title="喝水打卡" show-back show-profile />
 
-        <div class="stat-grid">
-          <div class="stat-card">
-            <span class="label">今日剩余</span>
-            <strong>{{ Math.max(dailyTarget - todayTotal, 0) }} ml</strong>
+    <main class="px-6 py-6 max-w-md mx-auto space-y-6 safe-bottom">
+      <GlassCard>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h4>今日喝水</h4>
+            <p class="caption mt-1">目标 {{ goal }}ml</p>
           </div>
-          <div class="stat-card">
-            <span class="label">7 日总量</span>
-            <strong>{{ weeklyTotal }} ml</strong>
-          </div>
-          <div class="stat-card">
-            <span class="label">饮品种类</span>
-            <strong>{{ drinks.length }}</strong>
-          </div>
+          <span class="text-2xl font-bold">{{ todayTotal }}ml</span>
         </div>
-      </div>
-
-      <div class="hero-form">
-        <v-select
-          v-model="selectedDrinkId"
-          :items="selectableDrinks"
-          item-title="name"
-          item-value="id"
-          label="选择饮品"
-          prepend-inner-icon="mdi-cup-water"
-        ></v-select>
-
-        <div class="quick-chip-row" v-if="favoriteDrinks.length">
-          <v-chip
-            v-for="drink in favoriteDrinks"
-            :key="drink.id"
-            variant="outlined"
-            class="quick-chip"
-            @click="applyDrink(drink)"
-          >
-            {{ drink.name }}
-          </v-chip>
+        <div class="h-3 bg-white/10 rounded-full overflow-hidden mb-3">
+          <div
+            class="h-full bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--primary))] rounded-full transition-all duration-500"
+            :style="{ width: `${completion}%` }"
+          />
         </div>
-
-        <v-text-field
-          v-model.number="customAmount"
-          type="number"
-          label="自定义容量 (ml)"
-          min="50"
-          max="2000"
-          append-inner-icon="mdi-water"
-        ></v-text-field>
-
-        <div class="form-actions">
-          <v-btn
-            variant="text"
-            prepend-icon="mdi-plus"
-            class="ghost-action"
-            @click="showDrinkDialog = true"
-          >
-            添加自定义饮品
-          </v-btn>
-          <v-btn
-            color="primary"
-            class="primary-action"
-            :disabled="!canSubmit"
-            @click="saveIntake"
-          >
-            记录本次饮水
-          </v-btn>
+        <div class="flex items-center justify-between text-sm text-[rgb(var(--muted-foreground))]">
+          <span>已完成 {{ completion }}%</span>
+          <span>剩余 {{ Math.max(goal - todayTotal, 0) }}ml</span>
         </div>
-      </div>
-    </section>
+      </GlassCard>
 
-    <section class="calendar-card">
-      <div class="calendar-head">
-        <div>
-          <p class="eyebrow">饮水日历</p>
-          <h2>{{ displayMonthLabel }}</h2>
-        </div>
-        <div class="month-controls">
-          <v-btn icon variant="tonal" @click="shiftMonth(-1)">
-            <v-icon>mdi-chevron-left</v-icon>
-          </v-btn>
-          <v-btn icon variant="tonal" :disabled="monthOffset === 0" @click="shiftMonth(1)">
-            <v-icon>mdi-chevron-right</v-icon>
-          </v-btn>
-        </div>
-      </div>
-
-      <div class="weekday-row">
-        <span v-for="weekday in weekdays" :key="weekday">{{ weekday }}</span>
-      </div>
-      <div class="calendar-grid">
-        <div
-          v-for="day in calendarDays"
-          :key="day.key"
-          :class="['calendar-cell', { today: day.isToday, muted: day.isPlaceholder }]"
-        >
-          <div class="date">{{ day.label }}</div>
-          <div v-if="day.total" class="pill">
-            {{ day.total }} ml
+      <GlassCard>
+        <div class="flex items-center justify-between mb-4">
+          <h4>快捷添加</h4>
+          <div class="flex items-center gap-2 caption text-[rgb(var(--muted-foreground))]">
+            <Icon icon="lucide:droplet" class="w-4 h-4" />
+            <span>ml</span>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="grid grid-cols-3 gap-3">
+          <Button v-for="preset in presets" :key="preset" variant="outline" class="h-12" :disabled="hydrationStore.loading" @click="addWater(preset)">
+            +{{ preset }}
+          </Button>
+        </div>
+        <div class="flex items-center gap-3 mt-4">
+          <Button variant="outline" size="icon" class="h-12 w-12 border-white/10" :disabled="hydrationStore.loading" @click="decrementCustom">
+            <Icon icon="lucide:minus" class="w-5 h-5" />
+          </Button>
+          <div class="flex-1 text-center">
+            <input v-model.number="customAmount" type="number" class="w-full bg-transparent text-center text-2xl outline-none" />
+            <p class="caption">ml</p>
+          </div>
+          <Button variant="outline" size="icon" class="h-12 w-12 border-white/10" :disabled="hydrationStore.loading" @click="incrementCustom">
+            <Icon icon="lucide:plus" class="w-5 h-5" />
+          </Button>
+        </div>
+        <Button class="w-full h-11 gradient-primary mt-4" :disabled="hydrationStore.loading" @click="addWater(customAmount)">
+          <Icon icon="lucide:droplet" class="w-5 h-5 mr-2" />
+          添加记录
+        </Button>
+        <p v-if="hydrationStore.error" class="caption text-red-400 text-center mt-2">{{ hydrationStore.error }}</p>
+      </GlassCard>
 
-    <section class="history-card" v-if="entries.length">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">最近记录</p>
-          <h2>最新 10 条饮水</h2>
+      <GlassCard>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <Icon icon="lucide:coffee" class="w-5 h-5 text-orange-400" />
+            <h4>咖啡因摄入</h4>
+          </div>
+          <span class="caption">{{ caffeineStat }}</span>
+        </div>
+        <div class="h-3 bg-white/10 rounded-full overflow-hidden mb-3">
+          <div
+            class="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-500"
+            :style="{ width: caffeinePercent }"
+          />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-[rgb(var(--muted-foreground))]">{{ caffeineStatus }}</span>
+          <span class="text-sm text-orange-400">剩余 {{ Math.max(caffeineLimit - caffeineToday, 0) }}mg</span>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div class="flex items-center justify-between mb-4">
+          <h4>本周记录</h4>
+          <Icon icon="lucide:calendar" class="w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+        </div>
+        <div class="grid grid-cols-7 gap-2">
+          <div v-for="(day, i) in weekData" :key="i" class="flex flex-col items-center gap-2">
+            <span class="caption text-xs">{{ day.day }}</span>
+            <div
+              class="w-full aspect-square rounded-lg flex flex-col items-center justify-center gap-1"
+              :class="day.active ? 'bg-[rgb(var(--primary))] text-white' : day.amount >= goal ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-[rgb(var(--muted-foreground))]'"
+            >
+              <Icon icon="lucide:droplet" class="w-3 h-3" />
+              <span class="text-xs">{{ (day.amount / 1000).toFixed(1) }}L</span>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      <div>
+        <h4 class="mb-4">今日记录</h4>
+        <div v-if="hydrationStore.loading" class="text-center text-secondary text-sm">加载中...</div>
+        <div v-else-if="!todayLogs.length" class="text-center text-secondary text-sm">今日尚无记录</div>
+        <div v-else class="space-y-3">
+          <GlassCard v-for="log in todayLogs" :key="log.id">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[rgb(var(--accent))]/20 text-[rgb(var(--accent))]">
+                  <Icon icon="lucide:droplet" class="w-5 h-5" />
+                </div>
+                <div>
+                  <p>{{ log.amount }}ml 水</p>
+                  <p v-if="log.caffeineMg" class="caption">咖啡因 {{ log.caffeineMg }}mg</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="caption">{{ formatTime(log.recordedAt) }}</p>
+              </div>
+            </div>
+          </GlassCard>
         </div>
       </div>
-
-      <div class="table-wrapper">
-        <v-table>
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>饮品</th>
-              <th>容量</th>
-              <th>咖啡因</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="entry in entries.slice(0, 10)" :key="entry.id">
-              <td>{{ formatRecord(entry.recorded_at) }}</td>
-              <td>
-                <v-icon size="16" class="mr-1">{{ entry.drink_icon || 'mdi-cup-water' }}</v-icon>
-                {{ entry.drink_name }}
-              </td>
-              <td>{{ entry.amount }} ml</td>
-              <td>{{ entry.caffeine_mg ? entry.caffeine_mg + ' mg' : '--' }}</td>
-            </tr>
-          </tbody>
-        </v-table>
-      </div>
-    </section>
-
-    <v-dialog v-model="showDrinkDialog" max-width="420">
-      <v-card>
-        <v-card-title>添加自定义饮品</v-card-title>
-        <v-card-text>
-          <v-text-field v-model="newDrink.name" label="名称" required></v-text-field>
-          <v-text-field
-            v-model.number="newDrink.amount"
-            type="number"
-            label="默认容量 (ml)"
-            min="50"
-            max="2000"
-          ></v-text-field>
-          <v-text-field v-model="newDrink.icon" label="图标 (mdi 名称，可选)"></v-text-field>
-          <v-text-field
-            v-model.number="newDrink.caffeine_mg"
-            type="number"
-            label="咖啡因含量 mg (可选)"
-            min="0"
-          ></v-text-field>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn variant="text" @click="showDrinkDialog = false">取消</v-btn>
-          <v-btn color="primary" :disabled="!newDrink.name || !newDrink.amount" @click="createDrink">
-            保存
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { addMonths, eachDayOfInterval, endOfMonth, format, isToday, startOfMonth } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { storeToRefs } from 'pinia'
+import { computed, onMounted, ref } from 'vue'
+import { Icon } from '@iconify/vue'
+import { format } from 'date-fns'
+import TopNav from '@/components/TopNav.vue'
+import GlassCard from '@/components/GlassCard.vue'
+import Button from '@/components/ui/Button.vue'
 import { useHydrationStore } from '@/stores/hydration'
-import { useUserStore } from '@/stores/user'
 
 const hydrationStore = useHydrationStore()
-const userStore = useUserStore()
-const { drinks, entries, calendar } = storeToRefs(hydrationStore)
 
-const selectedDrinkId = ref<number | null>(null)
-const customAmount = ref<number | null>(null)
-const showDrinkDialog = ref(false)
-const newDrink = ref({
-  name: '',
-  amount: 300,
-  icon: '',
-  caffeine_mg: null as number | null
+const presets = [200, 300, 500]
+const customAmount = ref(250)
+
+const goal = computed(() => hydrationStore.goal)
+const todayTotal = computed(() => hydrationStore.todayTotal)
+const completion = computed(() => Math.min(Math.round((todayTotal.value / goal.value) * 100), 100))
+
+const caffeineToday = computed(() => hydrationStore.stats?.today ?? 0)
+const caffeineLimit = 300
+const caffeinePercent = computed(() => `${Math.min((caffeineToday.value / caffeineLimit) * 100, 100)}%`)
+const caffeineStat = computed(() => `${caffeineToday.value} / ${caffeineLimit}mg`)
+const caffeineStatus = computed(() => {
+  if (caffeineToday.value < caffeineLimit * 0.5) return '安全范围'
+  if (caffeineToday.value < caffeineLimit * 0.8) return '适度摄入'
+  return '接近上限'
 })
 
-const monthOffset = ref(0)
-const weekdays = ['日', '一', '二', '三', '四', '五', '六']
-
-const dailyTarget = 2000
-
-const todayTotal = computed(() => {
-  const todayKey = format(new Date(), 'yyyy-MM-dd')
-  const entry = calendar.value.find(item => item.date === todayKey)
-  return entry ? entry.total : 0
-})
-
-const weeklyTotal = computed(() =>
-  entries.value
-    .filter(item => {
-      const recordDate = new Date(item.recorded_at)
-      const now = new Date()
-      const diff = now.getTime() - recordDate.getTime()
-      return diff <= 6 * 24 * 60 * 60 * 1000
-    })
-    .reduce((sum, item) => sum + item.amount, 0)
-)
-
-const displayMonth = computed(() => addMonths(new Date(), monthOffset.value))
-const displayMonthLabel = computed(() => format(displayMonth.value, 'yyyy年MM月', { locale: zhCN }))
-
-const calendarMap = computed<Record<string, number>>(() =>
-  calendar.value.reduce((acc, item) => {
-    acc[item.date] = item.total
-    return acc
-  }, {} as Record<string, number>)
-)
-
-const calendarDays = computed(() => {
-  const start = startOfMonth(displayMonth.value)
-  const end = endOfMonth(displayMonth.value)
-  const days = eachDayOfInterval({ start, end })
-  const leading = Array.from({ length: start.getDay() }).map((_, index) => ({
-    key: `prev-${index}`,
-    isPlaceholder: true,
-    label: '',
-    total: 0,
-    isToday: false
-  }))
-
-  const mapped = days.map(day => {
-    const key = format(day, 'yyyy-MM-dd')
+const weekData = computed(() => {
+  const weekly = hydrationStore.stats?.weekly ?? []
+  return weekly.map(entry => {
+    const date = new Date(entry.date)
     return {
-      key,
-      label: day.getDate(),
-      total: calendarMap.value[key] || 0,
-      isPlaceholder: false,
-      isToday: isToday(day)
+      day: format(date, 'E'),
+      amount: entry.total,
+      active: format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
     }
   })
-
-  return [...leading, ...mapped]
 })
 
-const selectedDrink = computed(() =>
-  drinks.value.find(drink => drink.id === selectedDrinkId.value) || null
-)
+const todayLogs = computed(() => {
+  const dateKey = format(new Date(), 'yyyy-MM-dd')
+  return hydrationStore.entries.filter(e => e.recordedAt.startsWith(dateKey))
+})
 
-const selectableDrinks = computed(() => drinks.value)
-const favoriteDrinks = computed(() => drinks.value.filter(drink => drink.is_default).slice(0, 4))
-const canSubmit = computed(() => !!(customAmount.value || selectedDrink.value))
-
-const loadData = async () => {
-  await Promise.all([
-    hydrationStore.fetchDrinks(),
-    hydrationStore.fetchEntries(),
-    hydrationStore.fetchCalendar()
-  ])
-  if (drinks.value.length) {
-    const defaultDrink = drinks.value.find(d => d.is_default) ?? drinks.value[0]
-    selectedDrinkId.value = defaultDrink?.id ?? null
-    customAmount.value = defaultDrink?.amount ?? null
-  }
+const addWater = async (amount: number) => {
+  if (!amount) return
+  await hydrationStore.createEntry({ amount })
 }
 
-const shiftMonth = (delta: number) => {
-  const next = Math.max(Math.min(monthOffset.value + delta, 0), -1)
-  if (next === monthOffset.value) return
-  monthOffset.value = next
+const incrementCustom = () => {
+  customAmount.value += 50
 }
 
-watch(
-  () => monthOffset.value,
-  async () => {
-    const month = format(displayMonth.value, 'yyyy-MM')
-    await hydrationStore.fetchCalendar(month)
-  }
-)
-
-const applyDrink = (drink: any) => {
-  selectedDrinkId.value = drink.id
-  customAmount.value = drink.amount
+const decrementCustom = () => {
+  customAmount.value = Math.max(50, customAmount.value - 50)
 }
 
-watch(
-  () => selectedDrinkId.value,
-  value => {
-    if (!value) return
-    const drink = drinks.value.find(item => item.id === value)
-    if (drink) {
-      customAmount.value = drink.amount
-    }
-  }
-)
+const formatTime = (value: string) => format(new Date(value), 'HH:mm')
 
-const saveIntake = async () => {
-  const payload: Record<string, any> = {
-    amount: customAmount.value || selectedDrink.value?.amount,
-    drink_id: selectedDrinkId.value || undefined
-  }
-  if (!payload.amount) return
-  const result = await hydrationStore.addEntry(payload)
-  const logAmount = Number(result.amount || payload.amount)
-  userStore.logWater(logAmount, result.drink_name)
-  await hydrationStore.fetchCalendar(format(displayMonth.value, 'yyyy-MM'))
-  customAmount.value = null
-}
-
-const createDrink = async () => {
-  await hydrationStore.createDrink({
-    name: newDrink.value.name,
-    amount: newDrink.value.amount,
-    icon: newDrink.value.icon || undefined,
-    caffeine_mg: newDrink.value.caffeine_mg || undefined
-  })
-  showDrinkDialog.value = false
-  newDrink.value = { name: '', amount: 300, icon: '', caffeine_mg: null }
-}
-
-const formatRecord = (value: string) => format(new Date(value), 'MM月dd日 HH:mm')
-
-onMounted(loadData)
+onMounted(async () => {
+  await Promise.all([hydrationStore.fetchEntries(), hydrationStore.fetchStats()])
+})
 </script>
-
-<style scoped>
-.water-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 6px;
-  color: #e5e7eb;
-}
-
-.hydration-hero {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.1rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(16, 185, 129, 0.12));
-  border-radius: 20px;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-@media (min-width: 769px) {
-  .hydration-hero {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    padding: clamp(1.5rem, 4vw, 3rem);
-    border-radius: 32px;
-  }
-}
-
-.hero-info h1 {
-  margin: 0.2rem 0 0.5rem;
-  font-size: clamp(2rem, 3.5vw, 2.6rem);
-}
-
-.description {
-  color: rgba(226, 232, 240, 0.72);
-  max-width: 520px;
-}
-
-.stat-grid {
-  margin-top: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 0.65rem;
-}
-
-@media (min-width: 769px) {
-  .stat-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  }
-}
-
-.stat-card {
-  padding: 1rem;
-  border-radius: 16px;
-  background: #0f172a;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.stat-card .label {
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.hero-form {
-  padding: 1rem;
-  border-radius: 18px;
-  background: #0f172a;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.quick-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.quick-chip {
-  border-radius: 999px;
-}
-
-.form-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.form-actions .v-btn {
-  flex: 1;
-  min-height: 46px;
-}
-
-.primary-action {
-  font-weight: 600;
-}
-
-.calendar-card,
-.history-card {
-  background: #0f172a;
-  border-radius: 28px;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.calendar-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.weekday-row,
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-}
-
-.weekday-row span {
-  text-align: center;
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.calendar-cell {
-  min-height: 60px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.4);
-  padding: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.3rem;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.calendar-cell.today {
-  border: 1px solid rgba(96, 165, 250, 0.7);
-}
-
-.calendar-cell.muted {
-  opacity: 0;
-}
-
-.calendar-cell .date {
-  font-weight: 600;
-}
-
-.pill {
-  align-self: flex-start;
-  background: rgba(96, 165, 250, 0.18);
-  color: #bfdbfe;
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  font-size: 0.8rem;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.table-wrapper td,
-.table-wrapper th {
-  word-break: break-word;
-}
-
-.history-card table {
-  width: 100%;
-  min-width: 420px;
-  color: #e5e7eb;
-}
-
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  color: rgba(226, 232, 240, 0.7);
-  margin-bottom: 0.35rem;
-}
-
-@media (max-width: 768px) {
-  .water-page {
-    gap: 0.75rem;
-    padding: 4px 0;
-  }
-
-  .hydration-hero {
-    border-radius: 16px;
-    padding: 12px;
-  }
-
-  .stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-  }
-
-  .stat-card {
-    padding: 0.85rem;
-    border-radius: 12px;
-  }
-
-  .calendar-card,
-  .history-card {
-    padding: 12px 10px;
-    border-radius: 14px;
-    margin: 2px 0;
-  }
-
-  .hero-form {
-    padding: 12px;
-    border-radius: 14px;
-    gap: 0.75rem;
-  }
-
-  .hero-info h1 {
-    font-size: 1.5rem;
-    line-height: 1.2;
-  }
-
-  .calendar-grid {
-    gap: 0.25rem;
-  }
-
-  .calendar-cell {
-    min-height: 44px;
-    padding: 0.2rem;
-    border-radius: 8px;
-  }
-
-  .stat-grid {
-    gap: 0.4rem;
-  }
-
-  /* 超小屏幕 */
-  @media (max-width: 375px) {
-    .calendar-cell {
-      min-height: 36px;
-      font-size: 0.8rem;
-    }
-
-    .pill {
-      font-size: 0.65rem;
-    }
-  }
-}
-</style>

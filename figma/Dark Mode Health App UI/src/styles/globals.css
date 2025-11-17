@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Dark Mode Design Tokens - High Contrast Accessibility */
+  :root {
+    --background: 12 12 16;
+    --foreground: 250 250 250;
+    
+    --card: 20 20 28;
+    --card-foreground: 250 250 250;
+    
+    --card-elevated: 28 28 38;
+    --surface: 16 16 22;
+    
+    --primary: 99 102 241;
+    --primary-foreground: 255 255 255;
+    
+    --secondary: 139 92 246;
+    --secondary-foreground: 255 255 255;
+    
+    --accent: 34 211 238;
+    --accent-foreground: 12 12 16;
+    
+    --success: 34 197 94;
+    --warning: 251 191 36;
+    --danger: 239 68 68;
+    
+    --muted: 39 39 54;
+    --muted-foreground: 163 163 163;
+    
+    --border: 39 39 54;
+    --input: 39 39 54;
+    --ring: 99 102 241;
+    
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    
+    /* High Contrast Text Tokens */
+    --text-primary: 250 250 250;
+    --text-secondary: 199 199 199;
+    --text-tertiary: 163 163 163;
+  }
+  
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "HarmonyOS Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: rgb(var(--text-primary));
+  }
+  
+  /* Typography Scale - High Contrast */
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: rgb(var(--text-primary));
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: rgb(var(--text-primary));
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: rgb(var(--text-primary));
+  }
+  
+  h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: rgb(var(--text-primary));
+  }
+  
+  p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgb(var(--text-primary));
+  }
+  
+  small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: rgb(var(--text-secondary));
+  }
+  
+  .caption {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: rgb(var(--text-tertiary));
+  }
+  
+  /* Utility classes for text hierarchy */
+  .text-primary {
+    color: rgb(var(--text-primary));
+  }
+  
+  .text-secondary {
+    color: rgb(var(--text-secondary));
+  }
+  
+  .text-tertiary {
+    color: rgb(var(--text-tertiary));
+  }
+}
+
+@layer utilities {
+  /* Glass Effect */
+  .glass {
+    background: rgba(var(--card), 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .glass-strong {
+    background: rgba(var(--card), 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 20px rgba(var(--primary), 0.3);
+  }
+  
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(var(--accent), 0.3);
+  }
+  
+  /* Gradients */
+  .gradient-primary {
+    background: linear-gradient(135deg, rgb(var(--primary)), rgb(var(--secondary)));
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(135deg, rgb(var(--accent)), rgb(var(--primary)));
+  }
+  
+  .gradient-dark {
+    background: linear-gradient(180deg, rgb(var(--card)), rgb(var(--background)));
+  }
+  
+  /* Card Shadows */
+  .shadow-card {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Safe Area */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+  
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+}

@@ -1,342 +1,234 @@
 <template>
-  <div class="dashboard">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">今日概览</p>
-        <h1>状态仪表盘</h1>
-        <p class="description">
-          汇总饮水、抽烟与摸鱼记录，并提供快捷入口助你保持节奏。
-        </p>
-      </div>
-      <div class="quick-actions">
-        <v-btn color="primary" variant="flat" @click="goWater">
-          <v-icon start>mdi-water</v-icon>
-          去喝水
-        </v-btn>
-        <v-btn color="secondary" variant="outlined" @click="goActivities">
-          <v-icon start>mdi-notebook-edit</v-icon>
-          记录活动
-        </v-btn>
-        <v-btn variant="text" @click="goChat">
-          <v-icon start>mdi-chat-outline</v-icon>
-          聊天室
-        </v-btn>
-      </div>
-    </section>
+  <div class="min-h-screen bg-[rgb(var(--background))]">
+    <TopNav title="数据看板" show-back show-profile />
 
-    <section class="summary-grid">
-      <div class="summary-card">
-        <p class="label">今日饮水</p>
-        <h2>{{ todayHydration }} ml</h2>
-        <div class="hint">目标 {{ dailyTarget }} ml（本月 {{ monthHydration }} ml）</div>
-      </div>
-      <div class="summary-card">
-        <p class="label">今日抽烟</p>
-        <h2>{{ todaySmoking }} 支</h2>
-        <div class="hint">共 {{ smokingRecords.length }} 条记录</div>
-      </div>
-      <div class="summary-card">
-        <p class="label">今日摸鱼</p>
-        <h2>{{ todaySlack }} 分钟</h2>
-        <div class="hint">心情 {{ slackMood }}</div>
-      </div>
-      <div class="summary-card">
-        <p class="label">聊天室消息</p>
-        <h2>{{ chatPreview.length }}</h2>
-        <div class="hint">最新 5 条以供回顾</div>
-      </div>
-    </section>
-
-    <section class="cards-grid">
-      <v-card elevation="4">
-        <v-card-title>最近饮水记录</v-card-title>
-        <v-card-text>
-          <v-table density="compact">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>饮品</th>
-                <th>容量</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="entry in hydrationEntries.slice(0, 5)" :key="entry.id">
-                <td>{{ formatRecord(entry.recorded_at) }}</td>
-                <td>{{ entry.drink_name }}</td>
-                <td>{{ entry.amount }} ml</td>
-              </tr>
-              <tr v-if="!hydrationEntries.length">
-                <td colspan="3" class="empty-cell">暂无饮水记录，快去补水吧。</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card-text>
-      </v-card>
-
-      <v-card elevation="4">
-        <v-card-title>聊天室动态</v-card-title>
-        <v-card-text class="chat-preview">
-          <template v-if="chatPreview.length">
-            <div v-for="message in chatPreview" :key="message.id" class="chat-line">
-              <span class="author">{{ message.username }}：</span>
-              <span class="content">{{ message.content }}</span>
-              <span class="time">{{ formatRecord(message.createdAt) }}</span>
-            </div>
-          </template>
-          <div v-else class="empty-cell">还没有聊天记录。</div>
-        </v-card-text>
-      </v-card>
-    </section>
-
-    <section class="timeline-card" v-if="activityTimeline.length">
-      <h3>最新活动</h3>
-      <v-timeline align="start" density="comfortable">
-        <v-timeline-item
-          v-for="item in activityTimeline"
-          :key="item.id"
-          :dot-color="item.category === 'smoking' ? 'primary' : item.category === 'slack' ? 'teal' : 'grey'"
+    <main class="px-6 py-6 max-w-md mx-auto space-y-6 safe-bottom">
+      <div class="flex gap-2 p-1 bg-[rgb(var(--card))] rounded-xl border border-white/5">
+        <button
+          class="flex-1 py-2 rounded-lg transition-base"
+          :class="timeRange === 'week' ? 'bg-[rgb(var(--primary))] text-white' : 'text-[rgb(var(--muted-foreground))]'"
+          @click="timeRange = 'week'"
         >
-          <div class="timeline-entry">
-            <div class="time">{{ formatRecord(item.created_at) }}</div>
-            <div class="title">{{ renderTitle(item) }}</div>
-            <div class="details">{{ renderDetails(item) }}</div>
+          本周
+        </button>
+        <button
+          class="flex-1 py-2 rounded-lg transition-base"
+          :class="timeRange === 'month' ? 'bg-[rgb(var(--primary))] text-white' : 'text-[rgb(var(--muted-foreground))]'"
+          @click="timeRange = 'month'"
+        >
+          本月
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <GlassCard v-for="stat in statCards" :key="stat.label">
+          <div class="flex items-start justify-between mb-3">
+            <Icon :icon="stat.icon" class="w-5 h-5" :class="stat.color" />
+            <div class="flex items-center gap-1 text-sm" :class="stat.trend === 'up' ? 'text-green-400' : 'text-red-400'">
+              <Icon :icon="stat.trend === 'up' ? 'lucide:trending-up' : 'lucide:trending-down'" class="w-3 h-3" />
+              {{ stat.change }}
+            </div>
           </div>
-        </v-timeline-item>
-      </v-timeline>
-    </section>
+          <div class="text-2xl mb-1">{{ stat.value }}</div>
+          <div class="caption">{{ stat.label }}</div>
+        </GlassCard>
+      </div>
+
+      <GlassCard>
+        <h4 class="mb-4">喝水趋势</h4>
+        <div class="flex items-end gap-3 h-48" v-if="waterSeries.length">
+          <div
+            v-for="day in waterSeries"
+            :key="day.label"
+            class="flex-1 flex flex-col items-center gap-2"
+          >
+            <div class="w-full rounded-t-lg bg-gradient-to-t from-[rgb(var(--accent))] to-[rgb(var(--primary))]" :style="{ height: `${Math.max(day.amount / maxWater * 100, 4)}%` }" />
+            <span class="caption text-[10px] text-center">{{ day.label }}</span>
+          </div>
+        </div>
+        <div v-else class="text-center text-secondary text-sm">暂无数据</div>
+        <div class="flex items-center justify-between mt-4" v-if="waterSeries.length">
+          <div>
+            <div class="caption">平均值</div>
+            <div class="text-[rgb(var(--accent))]">{{ avgWater }}ml</div>
+          </div>
+          <div>
+            <div class="caption">最高值</div>
+            <div class="text-[rgb(var(--accent))]">{{ maxWater }}ml</div>
+          </div>
+          <div>
+            <div class="caption">最低值</div>
+            <div class="text-[rgb(var(--accent))]">{{ minWater }}ml</div>
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <h4 class="mb-4">活动统计</h4>
+        <div class="flex items-end gap-3 h-48" v-if="activitySeries.length">
+          <div
+            v-for="day in activitySeries"
+            :key="day.label"
+            class="flex-1 flex flex-col items-center gap-2"
+          >
+            <div class="w-full rounded-t-lg bg-gradient-to-t from-[rgb(var(--primary))] to-[rgb(var(--secondary))]" :style="{ height: `${Math.max(day.count / maxActivity * 100, 4)}%` }" />
+            <span class="caption text-[10px] text-center">{{ day.label }}</span>
+          </div>
+        </div>
+        <div v-else class="text-center text-secondary text-sm">暂无数据</div>
+      </GlassCard>
+
+      <GlassCard>
+        <h4 class="mb-4">本周对比</h4>
+        <div class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span>喝水完成率</span>
+              <span class="text-[rgb(var(--accent))]">{{ completionWater }}%</span>
+            </div>
+            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-[rgb(var(--accent))] to-[rgb(var(--primary))] rounded-full" :style="{ width: `${completionWater}%` }" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span>活动次数</span>
+              <span class="text-[rgb(var(--primary))]">{{ activityTotal }}</span>
+            </div>
+            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-[rgb(var(--primary))] to-[rgb(var(--secondary))] rounded-full" :style="{ width: `${activityCompletion}%` }" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span>游戏训练</span>
+              <span class="text-[rgb(var(--secondary))]">{{ trainingTotal }} 次</span>
+            </div>
+            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-[rgb(var(--secondary))] to-purple-500 rounded-full" :style="{ width: `${trainingCompletion}%` }" />
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { Icon } from '@iconify/vue'
+import TopNav from '@/components/TopNav.vue'
+import GlassCard from '@/components/GlassCard.vue'
 import { useHydrationStore } from '@/stores/hydration'
 import { useActivityStore } from '@/stores/activity'
-import { useChatStore } from '@/stores/chat'
+import { useGamesStore } from '@/stores/games'
+import { useDashboardStore } from '@/stores/dashboard'
 
-const router = useRouter()
+type RangeKey = 'week' | 'month'
+const timeRange = ref<RangeKey>('week')
+
 const hydrationStore = useHydrationStore()
 const activityStore = useActivityStore()
-const chatStore = useChatStore()
+const gamesStore = useGamesStore()
+const dashboardStore = useDashboardStore()
 
-const dailyTarget = 2000
+const daysBack = (range: RangeKey) => (range === 'week' ? 7 : 30)
 
-const hydrationEntries = computed(() => hydrationStore.entries)
-const todayHydration = computed(() => {
-  const today = format(new Date(), 'yyyy-MM-dd')
-  return hydrationEntries.value
-    .filter(entry => entry.recorded_at.startsWith(today))
-    .reduce((sum, entry) => sum + entry.amount, 0)
-})
-
-const monthHydration = computed(() => {
-  const month = format(new Date(), 'yyyy-MM')
-  return hydrationEntries.value
-    .filter(entry => entry.recorded_at.startsWith(month))
-    .reduce((sum, entry) => sum + entry.amount, 0)
-})
-
-const smokingRecords = computed(() => activityStore.smokingRecords)
-const slackRecords = computed(() => activityStore.slackRecords)
-const activityTimeline = computed(() => activityStore.activities.slice(0, 6))
-
-const todaySmoking = computed(() => {
-  const today = format(new Date(), 'yyyy-MM-dd')
-  return smokingRecords.value
-    .filter(record => record.recorded_at.startsWith(today))
-    .reduce((sum, record) => sum + record.count, 0)
-})
-
-const todaySlack = computed(() => {
-  const today = format(new Date(), 'yyyy-MM-dd')
-  return slackRecords.value
-    .filter(record => record.recorded_at.startsWith(today))
-    .reduce((sum, record) => sum + record.duration, 0)
-})
-
-const slackMood = computed(() => {
-  if (!slackRecords.value.length) return '--'
-  const latest = slackRecords.value[0]
-  return translateMood(latest.mood)
-})
-
-const chatPreview = computed(() => chatStore.messages.slice(-5).reverse())
-
-const translateMood = (value?: string | null) => {
-  if (!value) return '--'
-  const map: Record<string, string> = {
-    relaxed: '放松',
-    stressed: '压力大',
-    social: '社交',
-    habit: '习惯',
-    other: '其它',
-    bored: '无聊',
-    stress: '缓解压力'
+const waterSeries = computed(() => {
+  const weekly = hydrationStore.stats?.weekly ?? []
+  const count = daysBack(timeRange.value)
+  const map: Record<string, number> = {}
+  for (let i = 0; i < count; i++) {
+    const day = new Date()
+    day.setDate(day.getDate() - (count - 1 - i))
+    map[format(day, 'yyyy-MM-dd')] = 0
   }
-  return map[value] || value
-}
+  weekly.forEach(entry => {
+    if (map[entry.date] !== undefined) map[entry.date] = entry.total
+  })
+  return Object.entries(map).map(([key, val]) => ({
+    label: format(new Date(key), timeRange.value === 'week' ? 'EEE' : 'MM/dd', { locale: zhCN }),
+    amount: val
+  }))
+})
 
-const formatRecord = (value: string) => format(new Date(value), 'MM月dd日 HH:mm', { locale: zhCN })
+const maxWater = computed(() => Math.max(...waterSeries.value.map(d => d.amount), 1))
+const minWater = computed(() => Math.min(...waterSeries.value.map(d => d.amount), 0))
+const avgWater = computed(() => Math.round(waterSeries.value.reduce((s, d) => s + d.amount, 0) / (waterSeries.value.length || 1)))
 
-const renderTitle = (item: any) => {
-  switch (item.category) {
-    case 'smoking':
-      return '抽烟记录'
-    case 'slack':
-      return '摸鱼记录'
-    default:
-      return '活动'
+const activitySeries = computed(() => {
+  const data = activityStore.activities
+  const count = daysBack(timeRange.value)
+  const map: Record<string, number> = {}
+  for (let i = 0; i < count; i++) {
+    const day = new Date()
+    day.setDate(day.getDate() - (count - 1 - i))
+    map[format(day, 'yyyy-MM-dd')] = 0
   }
-}
+  data.forEach(entry => {
+    const key = format(new Date(entry.createdAt), 'yyyy-MM-dd')
+    if (map[key] !== undefined) map[key] += 1
+  })
+  return Object.entries(map).map(([key, val]) => ({
+    label: format(new Date(key), timeRange.value === 'week' ? 'EEE' : 'MM/dd', { locale: zhCN }),
+    count: val
+  }))
+})
 
-const renderDetails = (item: any) => {
-  if (item.category === 'smoking') {
-    return `数量 ${item.details?.count ?? '--'} 支 · 心情 ${translateMood(item.details?.mood)}`
-  }
-  if (item.category === 'slack') {
-    return `时长 ${item.details?.duration ?? '--'} 分钟 · 心情 ${translateMood(item.details?.mood)}`
-  }
-  return item.details?.description || JSON.stringify(item.details || {})
-}
+const maxActivity = computed(() => Math.max(...activitySeries.value.map(d => d.count), 1))
+const activityTotal = computed(() => activityStore.activities.length)
 
-const goWater = () => router.push({ name: 'WaterTracker' })
-const goActivities = () => router.push({ name: 'Activities' })
-const goChat = () => router.push({ name: 'ChatRoom' })
+const statCards = computed(() => [
+  {
+    label: '日均喝水',
+    value: `${(avgWater.value / 1000).toFixed(1)}L`,
+    change: '+0%',
+    trend: 'up',
+    icon: 'lucide:droplets',
+    color: 'text-cyan-400'
+  },
+  {
+    label: '活动次数',
+    value: activityTotal.value,
+    change: '+0%',
+    trend: 'up',
+    icon: 'lucide:activity',
+    color: 'text-green-400'
+  },
+  {
+    label: '训练次数',
+    value: trainingTotal.value,
+    change: '+0%',
+    trend: 'up',
+    icon: 'lucide:zap',
+    color: 'text-purple-400'
+  },
+  {
+    label: '喝水完成',
+    value: `${completionWater}%`,
+    change: '+0%',
+    trend: 'up',
+    icon: 'lucide:coffee',
+    color: 'text-orange-400'
+  }
+])
+
+const completionWater = computed(() => Math.min(Math.round(((hydrationStore.stats?.today ?? 0) / (hydrationStore.stats?.goal ?? 2000)) * 100), 100))
+const activityCompletion = computed(() => Math.min(Math.round((activityTotal.value / 20) * 100), 100))
+const trainingTotal = computed(() => gamesStore.userSummary?.totals.plays ?? 0)
+const trainingCompletion = computed(() => Math.min(Math.round((trainingTotal.value / 20) * 100), 100))
 
 onMounted(async () => {
   await Promise.all([
     hydrationStore.fetchEntries(),
-    activityStore.initialize()
-  ]).catch(() => undefined)
-  chatStore.initialize()
+    hydrationStore.fetchStats(),
+    activityStore.fetchActivities(),
+    gamesStore.fetchUserSummary(),
+    dashboardStore.fetchSummary().catch(() => undefined)
+  ])
 })
 </script>
-
-<style scoped>
-.dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  color: #e5e7eb;
-  background: #0b1220;
-  padding: clamp(1.25rem, 4vw, 2rem);
-}
-
-.hero {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.eyebrow {
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(226, 232, 240, 0.7);
-}
-
-.description {
-  color: rgba(226, 232, 240, 0.7);
-  max-width: 520px;
-}
-
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.summary-card {
-  padding: 1.25rem;
-  border-radius: 20px;
-  background: #0f172a;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.summary-card .label {
-  font-size: 0.9rem;
-  color: rgba(226, 232, 240, 0.7);
-}
-
-.summary-card h2 {
-  margin: 0.3rem 0;
-}
-
-.summary-card .hint {
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-.chat-preview {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.chat-line {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.5rem;
-  align-items: baseline;
-  font-size: 0.95rem;
-}
-
-.chat-line .author {
-  font-weight: 600;
-}
-
-.chat-line .content {
-  color: rgba(226, 232, 240, 0.8);
-  word-break: break-word;
-}
-
-.chat-line .time {
-  font-size: 0.8rem;
-  color: rgba(226, 232, 240, 0.6);
-}
-
-.timeline-card {
-  background: #0f172a;
-  border-radius: 24px;
-  padding: 1.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.timeline-entry .time {
-  font-size: 0.85rem;
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.timeline-entry .title {
-  font-weight: 600;
-}
-
-.timeline-entry .details {
-  color: rgba(226, 232, 240, 0.7);
-}
-
-.empty-cell {
-  text-align: center;
-  color: rgba(15, 23, 42, 0.45);
-}
-
-@media (max-width: 768px) {
-  .quick-actions {
-    flex-direction: column;
-  }
-}
-</style>

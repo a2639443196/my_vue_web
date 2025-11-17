@@ -1,92 +1,137 @@
 <template>
-  <div class="auth-layout">
-    <div class="auth-hero">
-      <div class="hero-content">
-        <h1>注册成为彦祖的伙伴</h1>
-        <p>创建一个专属账号，记录你的健康旅程，每一次喝水、训练与互动都将沉淀成成长的足迹。</p>
-        <div class="hero-grid">
-          <div>
-            <h3>个性化仪表盘</h3>
-            <p>登陆后可自定义首页导航卡片，将常用入口一键放入首页。</p>
+  <div class="min-h-screen flex flex-col bg-gradient-to-b from-[rgb(var(--background))] to-[rgb(var(--card))]">
+    <div class="flex-1 flex flex-col justify-center px-6 py-12 max-w-md mx-auto w-full">
+      <div class="mb-8">
+        <div class="flex items-center gap-2 mb-4">
+          <div :class="['h-1 flex-1 rounded-full', step >= 1 ? 'bg-[rgb(var(--primary))]' : 'bg-white/10']" />
+          <div :class="['h-1 flex-1 rounded-full', step >= 2 ? 'bg-[rgb(var(--primary))]' : 'bg-white/10']" />
+        </div>
+        <p class="caption text-center">步骤 {{ step }} / 2</p>
+      </div>
+
+      <div class="text-center mb-8">
+        <h1 class="mb-2">创建账号</h1>
+        <p class="text-secondary">
+          {{ step === 1 ? '输入基本信息' : '设置安全密码' }}
+        </p>
+      </div>
+
+      <div v-if="step === 1" class="space-y-5">
+        <div class="space-y-2">
+          <Label for-id="username">用户名</Label>
+          <div class="relative">
+            <Icon icon="lucide:user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+            <Input
+              id="username"
+              v-model="form.username"
+              type="text"
+              placeholder="选择一个用户名"
+              class="pl-12 h-12"
+            />
           </div>
-          <div>
-            <h3>数据本地安全存储</h3>
-            <p>所有信息都会保存于浏览器本地，无需担心账号被盗。</p>
+        </div>
+
+        <div class="space-y-2">
+          <Label for-id="email">邮箱</Label>
+          <div class="relative">
+            <Icon icon="lucide:mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+            <Input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="your@email.com"
+              class="pl-12 h-12"
+            />
           </div>
         </div>
       </div>
-    </div>
 
-    <v-card class="auth-card" elevation="12">
-      <v-card-title class="text-h5 font-weight-bold mb-2">创建新账号</v-card-title>
-      <v-card-subtitle class="mb-6 text-medium-emphasis">
-        创建用户名和密码即可完成注册，支持手机号作为联系方式。
-      </v-card-subtitle>
-
-      <v-form @submit.prevent="handleSubmit" ref="formRef">
-        <v-text-field
-          v-model="form.username"
-          label="用户名"
-          prepend-inner-icon="mdi-account-outline"
-          :rules="[rules.required, rules.minUser]"
-          required
-        ></v-text-field>
-
-        <v-text-field
-          v-model="form.phone"
-          label="手机号"
-          type="tel"
-          inputmode="tel"
-          prepend-inner-icon="mdi-cellphone"
-          :rules="[rules.required, rules.phone]"
-          required
-        ></v-text-field>
-
-        <v-text-field
-          v-model="form.password"
-          :type="showPassword ? 'text' : 'password'"
-          label="密码"
-          prepend-inner-icon="mdi-lock-outline"
-          :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-          @click:append-inner="showPassword = !showPassword"
-          :rules="[rules.required, rules.minLength]"
-          required
-        ></v-text-field>
-
-        <v-text-field
-          v-model="form.confirmPassword"
-          :type="showPassword ? 'text' : 'password'"
-          label="确认密码"
-          prepend-inner-icon="mdi-lock-check-outline"
-          :rules="[rules.required, matchPassword]"
-          required
-        ></v-text-field>
-
-        <div class="mb-4 text-body-2 text-medium-emphasis">
-          点击注册表示你同意在浏览器本地保存账号数据。
+      <div v-else class="space-y-5">
+        <div class="space-y-2">
+          <Label for-id="password">密码</Label>
+          <div class="relative">
+            <Icon icon="lucide:lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+            <Input
+              id="password"
+              v-model="form.password"
+              type="password"
+              placeholder="设置密码"
+              class="pl-12 h-12"
+            />
+          </div>
         </div>
 
-        <v-btn
-          type="submit"
-          color="primary"
-          block
-          size="large"
-          :loading="userStore.loading"
-        >
-          注册
-        </v-btn>
+        <div class="p-4 rounded-xl bg-[rgb(var(--card))] border border-white/5">
+          <p class="caption mb-3">密码强度要求</p>
+          <div class="space-y-2">
+            <div v-for="req in passwordRequirements" :key="req.label" class="flex items-center gap-2">
+              <Icon
+                v-if="req.met"
+                icon="lucide:check"
+                class="w-4 h-4 text-green-400"
+              />
+              <Icon
+                v-else
+                icon="lucide:x"
+                class="w-4 h-4 text-[rgb(var(--muted-foreground))]"
+              />
+              <span :class="['text-sm', req.met ? 'text-green-400' : 'text-[rgb(var(--muted-foreground))]']">
+                {{ req.label }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        <v-btn class="mt-4" variant="text" block @click="goLogin">
-          已有账号？点击登录
-        </v-btn>
-      </v-form>
-    </v-card>
+        <div class="space-y-2">
+          <Label for-id="confirmPassword">确认密码</Label>
+          <div class="relative">
+            <Icon icon="lucide:lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
+            <Input
+              id="confirmPassword"
+              v-model="form.confirmPassword"
+              type="password"
+              placeholder="再次输入密码"
+              class="pl-12 h-12"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 space-y-4">
+        <Button
+          class="w-full h-12 gradient-primary glow-primary"
+          :disabled="primaryDisabled || userStore.loading"
+          @click="handleContinue"
+        >
+          {{ step === 1 ? '继续' : '完成注册' }}
+        </Button>
+
+        <Button
+          v-if="step === 2"
+          variant="outline"
+          class="w-full h-12 border-white/10"
+          @click="step = 1"
+        >
+          返回
+        </Button>
+      </div>
+
+      <div class="text-center mt-8">
+        <button class="text-[rgb(var(--primary))] hover:underline" @click="goLogin">
+          已有账号？立即登录
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { Icon } from '@iconify/vue'
+import Input from '@/components/ui/Input.vue'
+import Label from '@/components/ui/Label.vue'
+import Button from '@/components/ui/Button.vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 
@@ -94,36 +139,45 @@ const router = useRouter()
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 
-const formRef = ref()
-const showPassword = ref(false)
-
+const step = ref(1)
 const form = reactive({
   username: '',
-  phone: '',
+  email: '',
   password: '',
   confirmPassword: ''
 })
 
-const rules = {
-  required: (value: string) => (!!value && value.length > 0) || '该字段不能为空',
-  phone: (value: string) => /^\d{6,15}$/.test(value.replace(/\D/g, '')) || '请输入有效的手机号',
-  minLength: (value: string) => value.length >= 6 || '密码长度至少为 6 位',
-  minUser: (value: string) => value.length >= 2 || '用户名不少于 2 个字符'
-}
+const passwordRequirements = computed(() => [
+  { label: '至少 8 个字符', met: form.password.length >= 8 },
+  { label: '包含数字', met: /\d/.test(form.password) },
+  { label: '包含大写字母', met: /[A-Z]/.test(form.password) },
+  { label: '包含小写字母', met: /[a-z]/.test(form.password) }
+])
 
-const matchPassword = (value: string) => value === form.password || '两次密码输入不一致'
+const primaryDisabled = computed(() => {
+  if (step.value === 1) return !form.username.trim() || !form.email.trim()
+  return !form.password || !form.confirmPassword
+})
 
-const handleSubmit = async () => {
-  const isValid = await formRef.value?.validate()
-  if (!isValid) return
+const handleContinue = async () => {
+  if (step.value === 1) {
+    if (!form.username.trim() || !form.email.trim()) return
+    step.value = 2
+    return
+  }
+
+  if (form.password !== form.confirmPassword) {
+    notificationStore.showError('两次密码输入不一致')
+    return
+  }
 
   try {
     await userStore.register({
       username: form.username.trim(),
-      phone: form.phone.trim(),
+      phone: form.email.trim() || form.username.trim(),
       password: form.password,
       confirmPassword: form.confirmPassword,
-      email: ''
+      email: form.email.trim()
     })
     notificationStore.showSuccess('注册成功，已为你自动登录')
     router.replace('/')
@@ -134,86 +188,3 @@ const handleSubmit = async () => {
 
 const goLogin = () => router.push({ name: 'Login' })
 </script>
-
-<style scoped>
-.auth-layout {
-  min-height: calc(100vh - 80px);
-  width: min(1200px, 100%);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: clamp(1.5rem, 4vw, 3.5rem);
-  padding: clamp(1.5rem, 5vw, 4rem);
-  align-items: center;
-}
-
-.auth-hero {
-  border-radius: 32px;
-  padding: clamp(1.5rem, 5vw, 4rem);
-  background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15), transparent 55%),
-    radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.12), transparent 55%),
-    #ffffff;
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.08);
-}
-
-.hero-content {
-  max-width: 500px;
-}
-
-.hero-content h1 {
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 700;
-  margin-bottom: 1rem;
-  color: #064e3b;
-}
-
-.hero-content p {
-  color: rgba(6, 78, 59, 0.75);
-  margin-bottom: 2rem;
-  line-height: 1.7;
-}
-
-.hero-grid {
-  display: grid;
-  gap: 1.25rem;
-}
-
-.hero-grid h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 0.35rem;
-  color: #0f172a;
-}
-
-.hero-grid p {
-  margin: 0;
-  color: rgba(15, 23, 42, 0.7);
-  line-height: 1.6;
-}
-
-.auth-card {
-  max-width: 440px;
-  margin: auto;
-  border-radius: 28px;
-  padding: 1.5rem;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.08);
-}
-
-@media (max-width: 960px) {
-  .auth-layout {
-    grid-template-columns: 1fr;
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-
-  .auth-hero {
-    order: 2;
-    text-align: center;
-  }
-
-  .hero-content {
-    max-width: none;
-  }
-}
-</style>
