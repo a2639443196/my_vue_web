@@ -1,6 +1,7 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import './mobile-dark-theme.css';
 
 /* Global styles */
 * {
@@ -14,45 +15,34 @@ body {
   min-height: 100%;
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system,
     BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f4f5fb;
-  color: #0f172a;
-  line-height: 1.5;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: var(--leading-normal);
 }
 
 #app {
   min-height: 100vh;
   overflow-x: hidden;
-  background: radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.08), transparent 45%),
-    radial-gradient(circle at 80% 0%, rgba(236, 72, 153, 0.08), transparent 40%),
-    #f4f5fb;
+  background: var(--color-background);
 }
 
-/* Scrollbar styles */
+/* Dark theme scrollbar styles */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--color-border-hover);
 }
 
 /* Safe area support for mobile devices */

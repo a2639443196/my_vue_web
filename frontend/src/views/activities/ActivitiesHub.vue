@@ -306,6 +306,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 1.25rem;
   padding: 4px;
+  background: #0f172a;
 }
 
 .summary-grid {
@@ -317,20 +318,30 @@ onMounted(() => {
 .summary-card {
   padding: 1rem 1.1rem;
   border-radius: 18px;
-  background: white;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .eyebrow {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.55);
+  color: #94a3b8;
 }
 
 .hint {
-  color: rgba(15, 23, 42, 0.55);
+  color: #64748b;
   margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.summary-card h2 {
+  color: #f1f5f9;
+  margin: 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
 }
 
 .forms-grid {
@@ -366,28 +377,36 @@ onMounted(() => {
 }
 
 .timeline-card {
-  background: white;
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.2);
   border-radius: 20px;
   padding: 1.25rem;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .timeline-title {
   margin: 0 0 1rem;
+  color: #f1f5f9;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .timeline-entry .time {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: #94a3b8;
 }
 
 .timeline-entry .title {
   font-weight: 600;
+  color: #cbd5e1;
 }
 
 .timeline-entry .details {
   font-size: 0.9rem;
-  color: rgba(15, 23, 42, 0.7);
+  color: #94a3b8;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .table-wrapper {
@@ -401,8 +420,8 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .activities-page {
-    gap: 0.65rem;
-    padding: 4px 0;
+    gap: 0.75rem;
+    padding: 8px 4px;
   }
 
   .form-actions {
@@ -411,28 +430,36 @@ onMounted(() => {
 
   .summary-grid {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   .summary-card {
-    padding: 10px 12px;
-    border-radius: 12px;
-    margin: 2px 4px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin: 0;
+  }
+
+  .summary-card h2 {
+    font-size: 1.75rem;
+  }
+
+  .hint {
+    font-size: 0.8rem;
   }
 
   .form-card {
-    border-radius: 14px;
-    margin: 2px 4px;
+    border-radius: 16px;
+    margin: 0;
   }
 
-  .form-card .v-card-text {
-    padding: 12px 12px 10px;
+  .form-card :deep(.v-card-text) {
+    padding: 16px 16px 8px;
   }
 
   .timeline-card {
-    padding: 12px;
-    border-radius: 14px;
-    margin: 2px 4px;
+    padding: 16px;
+    border-radius: 16px;
+    margin: 0;
   }
 
   .timeline-title {
@@ -440,33 +467,42 @@ onMounted(() => {
   }
 
   .timeline-entry .title {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .timeline-entry .details {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .forms-grid {
-    gap: 0.65rem;
+    gap: 0.75rem;
   }
 
   .history-grid {
-    gap: 0.65rem;
+    gap: 0.75rem;
   }
 
   /* 超小屏幕优化 */
   @media (max-width: 375px) {
     .summary-card {
-      padding: 10px;
+      padding: 12px 14px;
     }
 
     .timeline-card {
-      padding: 10px;
+      padding: 14px;
     }
 
-    .form-card .v-card-text {
-      padding: 10px;
+    .form-card :deep(.v-card-text) {
+      padding: 14px;
+    }
+
+    .activities-page {
+      padding: 4px 2px;
+      gap: 0.65rem;
+    }
+
+    .summary-grid, .forms-grid, .history-grid {
+      gap: 0.65rem;
     }
   }
 }

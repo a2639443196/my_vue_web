@@ -44,13 +44,6 @@
               <v-btn
                 size="small"
                 variant="outlined"
-                @click="toggleTheme"
-              >
-                <v-icon size="16">{{ isDark ? 'mdi-brightness-7' : 'mdi-brightness-4' }}</v-icon>
-              </v-btn>
-              <v-btn
-                size="small"
-                variant="outlined"
                 to="/profile"
               >
                 <v-icon size="16">mdi-account-cog</v-icon>
@@ -74,7 +67,6 @@
       v-if="shouldUseMobileLayout && !isFullBleed"
       height="56"
       elevation="2"
-      color="white"
       density="comfortable"
       :class="['mobile-app-bar', { 'mobile-app-bar--safe': hasSafeArea }]"
     >
@@ -119,15 +111,6 @@
       <v-divider></v-divider>
 
       <v-list>
-        <v-list-item @click="toggleTheme">
-          <template #prepend>
-            <v-icon>{{ isDark ? 'mdi-brightness-7' : 'mdi-brightness-4' }}</v-icon>
-          </template>
-          <v-list-item-title>
-            {{ isDark ? '切换到浅色模式' : '切换到深色模式' }}
-          </v-list-item-title>
-        </v-list-item>
-
         <v-list-item to="/profile">
           <template #prepend>
             <v-icon>mdi-account-cog</v-icon>
@@ -231,9 +214,6 @@ const mobileNavItems = computed(() => [
   { to: '/dashboard', title: '仪表盘', icon: 'mdi-view-dashboard' },
 ])
 
-const toggleTheme = () => {
-  themeStore.toggle()
-}
 
 const isFullBleed = computed(() => route.meta.fullBleed === true)
 
@@ -270,19 +250,19 @@ watch(
 .layout-shell {
   min-height: 100vh;
   display: flex;
-  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08), transparent 45%),
-    radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.08), transparent 40%),
-    #f7f8fc;
+  background: #0f172a;
 }
 
 .layout-sidebar {
   backdrop-filter: blur(18px);
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(30, 41, 59, 0.95);
+  border-right: 1px solid rgba(71, 85, 105, 0.3);
 }
 
 .sidebar-profile {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(59, 130, 246, 0.15);
   border-radius: 16px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .layout-main {
@@ -337,7 +317,8 @@ watch(
 .mobile-app-bar {
   padding: 6px 10px;
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
 }
 
 .mobile-app-bar--safe {
@@ -348,6 +329,8 @@ watch(
 .mobile-title {
   text-align: center;
   font-weight: 600 !important;
+  color: #f1f5f9 !important;
+  font-size: 1.1rem !important;
 }
 
 :deep(.tap-target) {
@@ -417,17 +400,28 @@ watch(
   }
 }
 
-/* 暗色模式适配 */
-:deep(.v-theme--dark) .layout-sidebar {
-  background-color: rgba(37, 38, 44, 0.85);
+/* Dark theme app bar styles */
+:deep(.v-app-bar) {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  color: #f1f5f9 !important;
 }
 
-:deep(.v-theme--dark) .sidebar-profile {
-  background: rgba(99, 102, 241, 0.15);
+/* Navigation drawer dark theme */
+:deep(.v-navigation-drawer) {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  border-right: 1px solid rgba(71, 85, 105, 0.3);
 }
 
-:deep(.v-theme--dark) .v-app-bar {
-  background-color: #1a1a1a !important;
+:deep(.v-navigation-drawer .v-list-item-title) {
+  color: #f1f5f9 !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item) {
+  color: #cbd5e1 !important;
+}
+
+:deep(.v-navigation-drawer .v-list-item:hover) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
 }
 
 /* Add safe area support for mobile devices */

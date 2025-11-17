@@ -15,21 +15,8 @@ export const vuetify = createVuetify({
     VSkeletonLoader
   },
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: 'dark',
     themes: {
-      light: {
-        colors: {
-          primary: '#2563eb',
-          secondary: '#7c3aed',
-          accent: '#06b6d4',
-          error: '#dc2626',
-          info: '#0891b2',
-          success: '#16a34a',
-          warning: '#d97706',
-          surface: '#ffffff',
-          background: '#f8fafc'
-        }
-      },
       dark: {
         colors: {
           primary: '#3b82f6',
@@ -40,7 +27,12 @@ export const vuetify = createVuetify({
           success: '#10b981',
           warning: '#f59e0b',
           surface: '#1e293b',
-          background: '#0f172a'
+          background: '#0f172a',
+          'surface-variant': '#334155',
+          'on-surface': '#f1f5f9',
+          'on-surface-variant': '#cbd5e1',
+          'outline': '#475569',
+          'outline-variant': '#1e293b'
         }
       }
     }

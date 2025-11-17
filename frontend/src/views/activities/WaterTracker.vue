@@ -339,13 +339,15 @@ onMounted(loadData)
   flex-direction: column;
   gap: 1.5rem;
   padding: 6px;
+  background: #0f172a;
 }
 
 .hydration-hero {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.1rem;
-  background: linear-gradient(135deg, rgba(47, 112, 255, 0.12), rgba(76, 175, 80, 0.12));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.15));
+  border: 1px solid rgba(71, 85, 105, 0.2);
   border-radius: 20px;
   padding: clamp(1rem, 3vw, 1.5rem);
 }
@@ -361,11 +363,19 @@ onMounted(loadData)
 .hero-info h1 {
   margin: 0.2rem 0 0.5rem;
   font-size: clamp(2rem, 3.5vw, 2.6rem);
+  color: #f1f5f9;
+  font-weight: 700;
 }
 
 .description {
-  color: rgba(15, 23, 42, 0.65);
+  color: #94a3b8;
   max-width: 520px;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.hero-info .eyebrow {
+  color: #64748b;
 }
 
 .stat-grid {
@@ -384,23 +394,33 @@ onMounted(loadData)
 .stat-card {
   padding: 1rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .stat-card .label {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.stat-card strong {
+  color: #f1f5f9;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .hero-form {
   padding: 1rem;
   border-radius: 18px;
-  background: white;
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.2);
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .quick-chip-row {
@@ -431,10 +451,21 @@ onMounted(loadData)
 
 .calendar-card,
 .history-card {
-  background: white;
+  background: #1e293b;
+  border: 1px solid rgba(71, 85, 105, 0.2);
   border-radius: 28px;
   padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.calendar-card h2,
+.history-card h2 {
+  color: #f1f5f9;
+}
+
+.calendar-card .eyebrow,
+.history-card .eyebrow {
+  color: #64748b;
 }
 
 .calendar-head {
@@ -454,22 +485,30 @@ onMounted(loadData)
 .weekday-row span {
   text-align: center;
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 .calendar-cell {
   min-height: 60px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.02);
+  background: rgba(71, 85, 105, 0.1);
+  border: 1px solid rgba(71, 85, 105, 0.2);
   padding: 0.4rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 0.3rem;
+  transition: all 0.2s ease;
+}
+
+.calendar-cell:hover {
+  background: rgba(71, 85, 105, 0.15);
 }
 
 .calendar-cell.today {
-  border: 1px solid rgba(99, 102, 241, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .calendar-cell.muted {
@@ -478,15 +517,17 @@ onMounted(loadData)
 
 .calendar-cell .date {
   font-weight: 600;
+  color: #cbd5e1;
 }
 
 .pill {
   align-self: flex-start;
-  background: rgba(99, 102, 241, 0.1);
-  color: #4c1d95;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
   border-radius: 999px;
   padding: 0.1rem 0.6rem;
   font-size: 0.8rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .table-wrapper {
@@ -503,46 +544,47 @@ onMounted(loadData)
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: #64748b;
   margin-bottom: 0.35rem;
 }
 
 @media (max-width: 768px) {
   .water-page {
     gap: 0.75rem;
-    padding: 4px 0;
+    padding: 8px 4px;
   }
 
   .hydration-hero {
     border-radius: 16px;
-    padding: 12px;
+    padding: 16px;
+    gap: 1rem;
   }
 
   .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   .stat-card {
-    padding: 0.85rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 
   .calendar-card,
   .history-card {
-    padding: 12px 10px;
-    border-radius: 14px;
-    margin: 2px 0;
+    padding: 16px 14px;
+    border-radius: 16px;
+    margin: 0;
   }
 
   .hero-form {
-    padding: 12px;
-    border-radius: 14px;
-    gap: 0.75rem;
+    padding: 16px;
+    border-radius: 16px;
+    gap: 1rem;
   }
 
   .hero-info h1 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     line-height: 1.2;
   }
 
@@ -551,24 +593,52 @@ onMounted(loadData)
   }
 
   .calendar-cell {
-    min-height: 44px;
-    padding: 0.2rem;
-    border-radius: 8px;
+    min-height: 48px;
+    padding: 0.3rem;
+    border-radius: 10px;
   }
 
-  .stat-grid {
-    gap: 0.4rem;
+  .description {
+    font-size: 0.875rem;
+  }
+
+  .stat-card strong {
+    font-size: 1rem;
   }
 
   /* 超小屏幕 */
   @media (max-width: 375px) {
+    .water-page {
+      padding: 4px 2px;
+      gap: 0.65rem;
+    }
+
+    .hydration-hero {
+      padding: 14px;
+    }
+
     .calendar-cell {
-      min-height: 36px;
-      font-size: 0.8rem;
+      min-height: 42px;
+      font-size: 0.85rem;
+      padding: 0.25rem;
     }
 
     .pill {
-      font-size: 0.65rem;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+    }
+
+    .hero-info h1 {
+      font-size: 1.5rem;
+    }
+
+    .stat-card {
+      padding: 0.875rem;
+    }
+
+    .calendar-card,
+    .history-card {
+      padding: 14px 12px;
     }
   }
 }
