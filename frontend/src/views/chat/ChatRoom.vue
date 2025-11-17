@@ -311,8 +311,8 @@ const formatRelative = (value: string) =>
 }
 
 .chat-page--mobile {
-  min-height: calc(100vh - 48px);
-  min-height: calc(100dvh - 48px);
+  min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
 }
 
 .chat-page--safe {
@@ -330,7 +330,7 @@ const formatRelative = (value: string) =>
 }
 
 .head-content {
-  padding: 8px 16px;
+  padding: 10px 14px;
 }
 
 .head-row {
@@ -407,7 +407,7 @@ const formatRelative = (value: string) =>
 }
 
 .feed-content {
-  padding: 20px;
+  padding: 14px 16px;
   max-width: 100%;
 }
 
@@ -455,10 +455,10 @@ const formatRelative = (value: string) =>
 
 .bubble {
   background: white;
-  border-radius: 18px;
-  padding: 10px 14px;
+  border-radius: 16px;
+  padding: 9px 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  max-width: 75%;
+  max-width: 82%;
   word-wrap: break-word;
 }
 
@@ -495,8 +495,8 @@ const formatRelative = (value: string) =>
 .input-content {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  padding: 12px 20px;
+  gap: 10px;
+  padding: 10px 14px;
 }
 
 .composer {
@@ -572,18 +572,19 @@ const formatRelative = (value: string) =>
   }
 
   .feed-content {
-    padding: 8px;
+    padding: 10px 12px;
   }
 
   .chat-line {
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 10px;
   }
 
   .bubble {
-    max-width: 80%;
-    padding: 8px 12px;
+    max-width: 88%;
+    padding: 8px 11px;
     font-size: 15px;
+    border-radius: 14px;
   }
 
   .meta {
@@ -597,8 +598,8 @@ const formatRelative = (value: string) =>
   }
 
   .input-content {
-    padding: 6px 8px;
-    gap: 6px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .composer :deep(.v-textarea .v-field__input) {
@@ -616,6 +617,11 @@ const formatRelative = (value: string) =>
   .head-content {
     padding: 6px 8px;
     padding-top: calc(6px + env(safe-area-inset-top));
+  }
+
+  :deep(.v-btn--icon) {
+    width: 42px;
+    height: 42px;
   }
 }
 

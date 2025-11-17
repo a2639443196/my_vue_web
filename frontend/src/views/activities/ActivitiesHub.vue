@@ -304,7 +304,8 @@ onMounted(() => {
 .activities-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
+  padding: 4px;
 }
 
 .summary-grid {
@@ -314,8 +315,8 @@ onMounted(() => {
 }
 
 .summary-card {
-  padding: 1.25rem;
-  border-radius: 20px;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
   background: white;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
@@ -334,30 +335,40 @@ onMounted(() => {
 
 .forms-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
 }
 
 .form-card {
-  border-radius: 24px;
+  border-radius: 20px;
+}
+
+.form-card :deep(.v-card-title) {
+  padding-bottom: 4px;
+}
+
+.form-card :deep(.v-card-subtitle) {
+  padding-top: 0;
+  line-height: 1.4;
 }
 
 .form-body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
+  padding-top: 0.75rem;
 }
 
 .history-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
 .timeline-card {
   background: white;
-  border-radius: 24px;
-  padding: 1.5rem;
+  border-radius: 20px;
+  padding: 1.25rem;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
 
@@ -385,13 +396,13 @@ onMounted(() => {
 }
 
 .table-wrapper table {
-  min-width: 500px;
+  min-width: 420px;
 }
 
 @media (max-width: 768px) {
   .activities-page {
-    gap: 0.75rem;
-    padding: 8px;
+    gap: 0.65rem;
+    padding: 4px 0;
   }
 
   .form-actions {
@@ -404,24 +415,24 @@ onMounted(() => {
   }
 
   .summary-card {
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: 12px;
-    margin: 2px 0;
+    margin: 2px 4px;
   }
 
   .form-card {
-    border-radius: 16px;
-    margin: 4px 0;
+    border-radius: 14px;
+    margin: 2px 4px;
   }
 
   .form-card .v-card-text {
-    padding: 12px;
+    padding: 12px 12px 10px;
   }
 
   .timeline-card {
     padding: 12px;
-    border-radius: 16px;
-    margin: 4px 0;
+    border-radius: 14px;
+    margin: 2px 4px;
   }
 
   .timeline-title {
@@ -437,11 +448,11 @@ onMounted(() => {
   }
 
   .forms-grid {
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .history-grid {
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   /* 超小屏幕优化 */

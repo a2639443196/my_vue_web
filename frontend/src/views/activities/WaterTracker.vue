@@ -56,10 +56,20 @@
         ></v-text-field>
 
         <div class="form-actions">
-          <v-btn variant="text" prepend-icon="mdi-plus" @click="showDrinkDialog = true">
+          <v-btn
+            variant="text"
+            prepend-icon="mdi-plus"
+            class="ghost-action"
+            @click="showDrinkDialog = true"
+          >
             添加自定义饮品
           </v-btn>
-          <v-btn color="primary" :disabled="!canSubmit" @click="saveIntake">
+          <v-btn
+            color="primary"
+            class="primary-action"
+            :disabled="!canSubmit"
+            @click="saveIntake"
+          >
             记录本次饮水
           </v-btn>
         </div>
@@ -327,16 +337,17 @@ onMounted(loadData)
 .water-page {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+  padding: 6px;
 }
 
 .hydration-hero {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
+  gap: 1.1rem;
   background: linear-gradient(135deg, rgba(47, 112, 255, 0.12), rgba(76, 175, 80, 0.12));
-  border-radius: 24px;
-  padding: 1.5rem;
+  border-radius: 20px;
+  padding: clamp(1rem, 3vw, 1.5rem);
 }
 
 @media (min-width: 769px) {
@@ -360,8 +371,8 @@ onMounted(loadData)
 .stat-grid {
   margin-top: 1.5rem;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.65rem;
 }
 
 @media (min-width: 769px) {
@@ -383,12 +394,12 @@ onMounted(loadData)
 }
 
 .hero-form {
-  padding: 1.25rem;
-  border-radius: 20px;
+  padding: 1rem;
+  border-radius: 18px;
   background: white;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.1);
 }
 
@@ -404,15 +415,25 @@ onMounted(loadData)
 
 .form-actions {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-actions .v-btn {
+  flex: 1;
+  min-height: 46px;
+}
+
+.primary-action {
+  font-weight: 600;
 }
 
 .calendar-card,
 .history-card {
   background: white;
   border-radius: 28px;
-  padding: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1rem, 3vw, 1.5rem);
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.08);
 }
 
@@ -475,7 +496,7 @@ onMounted(loadData)
 
 .history-card table {
   width: 100%;
-  min-width: 500px;
+  min-width: 420px;
 }
 
 .eyebrow {
@@ -488,21 +509,41 @@ onMounted(loadData)
 
 @media (max-width: 768px) {
   .water-page {
-    gap: 1rem;
-    padding: 8px;
+    gap: 0.75rem;
+    padding: 4px 0;
   }
 
-  .form-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .hydration-hero {
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.85rem;
+    border-radius: 12px;
   }
 
   .calendar-card,
   .history-card {
+    padding: 12px 10px;
+    border-radius: 14px;
+    margin: 2px 0;
+  }
+
+  .hero-form {
     padding: 12px;
-    border-radius: 16px;
-    margin: 4px 0;
+    border-radius: 14px;
+    gap: 0.75rem;
+  }
+
+  .hero-info h1 {
+    font-size: 1.5rem;
+    line-height: 1.2;
   }
 
   .calendar-grid {
@@ -516,28 +557,7 @@ onMounted(loadData)
   }
 
   .stat-grid {
-    grid-template-columns: repeat(3, 1fr);
     gap: 0.4rem;
-  }
-
-  .stat-card {
-    padding: 8px;
-    border-radius: 10px;
-  }
-
-  .pill {
-    font-size: 0.7rem;
-    padding: 0.05rem 0.4rem;
-  }
-
-  .hero-form {
-    padding: 12px;
-    border-radius: 16px;
-    gap: 0.8rem;
-  }
-
-  .hero-info h1 {
-    font-size: 1.5rem;
   }
 
   /* 超小屏幕 */

@@ -72,27 +72,27 @@
     <!-- Mobile: Top App Bar -->
     <v-app-bar
       v-if="shouldUseMobileLayout && !isFullBleed"
-      height="48"
-      elevation="1"
+      height="56"
+      elevation="2"
       color="white"
-      density="compact"
-      :class="{ 'safe-area-top': hasSafeArea }"
+      density="comfortable"
+      :class="['mobile-app-bar', { 'mobile-app-bar--safe': hasSafeArea }]"
     >
       <template #prepend>
-        <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
+        <v-app-bar-nav-icon class="tap-target" @click="drawer = !drawer"></v-app-bar-nav-icon>
       </template>
 
-      <v-app-bar-title class="text-body-1 font-weight-medium">
+      <v-app-bar-title class="mobile-title text-body-1 font-weight-medium">
         {{ pageTitle }}
       </v-app-bar-title>
 
       <template #append>
         <v-btn
           icon
-          size="small"
+          class="tap-target"
           to="/profile"
         >
-          <v-icon size="20">mdi-account</v-icon>
+          <v-icon size="22">mdi-account</v-icon>
         </v-btn>
       </template>
     </v-app-bar>
@@ -320,7 +320,7 @@ watch(
 
 /* 移动端主内容区 */
 .mobile-main {
-  padding-top: 48px;
+  padding-top: calc(56px + env(safe-area-inset-top, 0px));
 }
 
 .layout-container {
@@ -334,9 +334,25 @@ watch(
   padding: clamp(0.75rem, 4vw, 1.5rem) !important;
 }
 
-/* 安全区域支持 */
-.safe-area-top {
-  padding-top: calc(48px + env(safe-area-inset-top));
+.mobile-app-bar {
+  padding: 6px 10px;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.mobile-app-bar--safe {
+  padding-top: calc(6px + env(safe-area-inset-top));
+  min-height: calc(56px + env(safe-area-inset-top));
+}
+
+.mobile-title {
+  text-align: center;
+  font-weight: 600 !important;
+}
+
+:deep(.tap-target) {
+  min-width: 42px;
+  min-height: 42px;
 }
 
 .gradient-text {
@@ -370,7 +386,7 @@ watch(
 /* 移动端边距优化 */
 @media (max-width: 768px) {
   .mobile-main {
-    padding-top: 48px;
+    padding-top: calc(56px + env(safe-area-inset-top, 0px));
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
