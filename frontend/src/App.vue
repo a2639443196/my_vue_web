@@ -1,9 +1,9 @@
 <template>
-  <v-app :theme="themeName">
+  <div class="app-root">
     <div v-if="systemLoading" class="app-loading">
       <div class="loader">
         <div class="spinner"></div>
-        <p class="mt-4 text-medium-emphasis">{{ $t('app.loading') }}</p>
+        <p class="mt-4 text-secondary text-sm">{{ $t('app.loading') }}</p>
       </div>
     </div>
 
@@ -15,25 +15,20 @@
       </router-view>
     </template>
 
-    <v-snackbar
-      v-model="notification.show"
-      :color="notification.type"
-      :timeout="notification.timeout"
-      location="bottom right"
-    >
-      {{ notification.message }}
-    </v-snackbar>
-  </v-app>
+    <AppToast
+      :notification="notification"
+      @close="notificationStore.hide()"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useTheme } from 'vuetify'
+import AppToast from '@/components/AppToast.vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notification'
 import { useThemeStore } from '@/stores/theme'
 
-const theme = useTheme()
 const themeStore = useThemeStore()
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
@@ -41,12 +36,11 @@ const notificationStore = useNotificationStore()
 const systemLoading = ref(true)
 
 const notification = computed(() => notificationStore.current)
-const themeName = computed(() => themeStore.currentTheme)
 
 watch(
   () => themeStore.currentTheme,
   value => {
-    theme.global.name.value = value
+    document.documentElement.setAttribute('data-theme', value)
   },
   { immediate: true }
 )
@@ -61,6 +55,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.app-root {
+  min-height: 100vh;
+  background: rgb(var(--background));
+  color: rgb(var(--text-primary));
+}
+
 .app-loading {
   position: fixed;
   inset: 0;

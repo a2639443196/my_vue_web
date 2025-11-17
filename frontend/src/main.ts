@@ -2,7 +2,6 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import { createHead } from '@vueuse/head'
-import { vuetify } from '@/plugins/vuetify'
 import naive from 'naive-ui'
 
 import App from './App.vue'
@@ -10,7 +9,6 @@ import router from './router'
 
 // Import styles
 import '@/styles/main.css'
-import 'vuetify/styles'
 // Naive UI styles are handled by the plugin
 
 // Create i18n instance
@@ -45,7 +43,6 @@ app.use(createPinia())
 app.use(router)
 app.use(i18n)
 app.use(head)
-app.use(vuetify)
 app.use(naive)
 
 // Global properties
