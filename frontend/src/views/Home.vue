@@ -368,6 +368,9 @@ const formatRelative = (date: string) =>
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: clamp(1.25rem, 4vw, 2rem) clamp(1.25rem, 5vw, 2.5rem);
+  background: #0b1220;
+  color: #e5e7eb;
 }
 
 .hero {
@@ -388,7 +391,7 @@ const formatRelative = (date: string) =>
 }
 
 .description {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(226, 232, 240, 0.75);
   max-width: 540px;
 }
 
@@ -400,14 +403,15 @@ const formatRelative = (date: string) =>
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: #0f172a;
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 10px 30px rgba(44, 62, 80, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 .stat-card .label {
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(226, 232, 240, 0.7);
   font-size: 0.9rem;
 }
 
@@ -425,12 +429,12 @@ const formatRelative = (date: string) =>
 
 .stat-card .hint {
   font-size: 0.8rem;
-  color: rgba(0, 0, 0, 0.45);
+  color: rgba(226, 232, 240, 0.6);
 }
 
 .hydration-card {
-  background: linear-gradient(160deg, #2f88ff 0%, #7c4dff 100%);
-  color: white;
+  background: linear-gradient(160deg, #1e293b 0%, #111827 100%);
+  color: #f8fafc;
   border-radius: 24px;
   padding: 2rem;
   display: flex;
@@ -444,7 +448,7 @@ const formatRelative = (date: string) =>
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.15), transparent 55%);
+  background: radial-gradient(circle at top, rgba(59, 130, 246, 0.2), transparent 55%);
   pointer-events: none;
 }
 
@@ -524,28 +528,29 @@ const formatRelative = (date: string) =>
   align-items: center;
   padding: 1.2rem;
   border-radius: 20px;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 20px 35px rgba(31, 59, 179, 0.08);
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.32);
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
+  color: #e5e7eb;
 }
 
 .nav-card.highlight {
-  box-shadow: 0 20px 40px rgba(0, 128, 255, 0.22);
+  box-shadow: 0 20px 40px rgba(96, 165, 250, 0.26);
 }
 
 .nav-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 25px 40px rgba(31, 59, 179, 0.14);
+  box-shadow: 0 25px 40px rgba(0, 0, 0, 0.36);
 }
 
 .nav-card-icon {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: color-mix(in srgb, var(--card-color) 15%, #ffffff);
+  background: color-mix(in srgb, var(--card-color) 18%, #0f172a);
   display: grid;
   place-items: center;
   margin-right: 1rem;
@@ -564,12 +569,12 @@ const formatRelative = (date: string) =>
 
 .nav-card-body p {
   margin: 0.4rem 0 0;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(226, 232, 240, 0.72);
   font-size: 0.92rem;
 }
 
 .nav-card-arrow {
-  color: rgba(0, 0, 0, 0.3);
+  color: rgba(226, 232, 240, 0.5);
 }
 
 .section-header {
@@ -585,7 +590,7 @@ const formatRelative = (date: string) =>
 }
 
 .section-header .hint {
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(226, 232, 240, 0.65);
   font-size: 0.9rem;
   margin-top: 0.25rem;
 }
@@ -610,11 +615,12 @@ const formatRelative = (date: string) =>
 }
 
 .chat-line .content {
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(226, 232, 240, 0.8);
+  word-break: break-word;
 }
 
 .chat-line .time {
-  color: rgba(0, 0, 0, 0.45);
+  color: rgba(226, 232, 240, 0.6);
   font-size: 0.8rem;
 }
 

@@ -44,13 +44,6 @@
               <v-btn
                 size="small"
                 variant="outlined"
-                @click="toggleTheme"
-              >
-                <v-icon size="16">{{ isDark ? 'mdi-brightness-7' : 'mdi-brightness-4' }}</v-icon>
-              </v-btn>
-              <v-btn
-                size="small"
-                variant="outlined"
                 to="/profile"
               >
                 <v-icon size="16">mdi-account-cog</v-icon>
@@ -74,7 +67,7 @@
       v-if="shouldUseMobileLayout && !isFullBleed"
       height="56"
       elevation="2"
-      color="white"
+      color="surface"
       density="comfortable"
       :class="['mobile-app-bar', { 'mobile-app-bar--safe': hasSafeArea }]"
     >
@@ -119,15 +112,6 @@
       <v-divider></v-divider>
 
       <v-list>
-        <v-list-item @click="toggleTheme">
-          <template #prepend>
-            <v-icon>{{ isDark ? 'mdi-brightness-7' : 'mdi-brightness-4' }}</v-icon>
-          </template>
-          <v-list-item-title>
-            {{ isDark ? '切换到浅色模式' : '切换到深色模式' }}
-          </v-list-item-title>
-        </v-list-item>
-
         <v-list-item to="/profile">
           <template #prepend>
             <v-icon>mdi-account-cog</v-icon>
@@ -202,11 +186,10 @@ const router = useRouter()
 const userStore = useUserStore()
 const notificationStore = useNotificationStore()
 const themeStore = useThemeStore()
-const { shouldUseMobileLayout, deviceType, hasSafeArea } = useDeviceDetection()
+const { shouldUseMobileLayout, hasSafeArea } = useDeviceDetection()
 
 // State
 const drawer = ref(false)
-const isDark = computed(() => themeStore.isDark)
 
 // Computed
 const pageTitle = computed(() => route.meta.title || '彦祖的导航')
@@ -230,10 +213,6 @@ const mobileNavItems = computed(() => [
   { to: '/games', title: '小游戏', icon: 'mdi-gamepad' },
   { to: '/dashboard', title: '仪表盘', icon: 'mdi-view-dashboard' },
 ])
-
-const toggleTheme = () => {
-  themeStore.toggle()
-}
 
 const isFullBleed = computed(() => route.meta.fullBleed === true)
 
@@ -270,18 +249,20 @@ watch(
 .layout-shell {
   min-height: 100vh;
   display: flex;
-  background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08), transparent 45%),
-    radial-gradient(circle at 90% 0%, rgba(59, 130, 246, 0.08), transparent 40%),
-    #f7f8fc;
+  background: radial-gradient(circle at 10% 15%, rgba(96, 165, 250, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(167, 139, 250, 0.08), transparent 45%),
+    #0b1220;
+  color: #e5e7eb;
 }
 
 .layout-sidebar {
   backdrop-filter: blur(18px);
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
 }
 
 .sidebar-profile {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(96, 165, 250, 0.12);
   border-radius: 16px;
 }
 
@@ -299,6 +280,7 @@ watch(
   gap: clamp(1.5rem, 2vw, 2.5rem);
   min-height: 100%;
   transition: padding 0.2s ease;
+  color: #e5e7eb;
 }
 
 .page-surface--mobile {
@@ -338,6 +320,7 @@ watch(
   padding: 6px 10px;
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(15, 23, 42, 0.96) !important;
 }
 
 .mobile-app-bar--safe {
@@ -348,6 +331,10 @@ watch(
 .mobile-title {
   text-align: center;
   font-weight: 600 !important;
+  color: #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 :deep(.tap-target) {

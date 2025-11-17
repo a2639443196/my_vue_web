@@ -306,6 +306,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 1.25rem;
   padding: 4px;
+  color: #e5e7eb;
 }
 
 .summary-grid {
@@ -317,19 +318,20 @@ onMounted(() => {
 .summary-card {
   padding: 1rem 1.1rem;
   border-radius: 18px;
-  background: white;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  background: #111827;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .eyebrow {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .hint {
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.65);
   margin-top: 0.4rem;
 }
 
@@ -341,6 +343,8 @@ onMounted(() => {
 
 .form-card {
   border-radius: 20px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .form-card :deep(.v-card-title) {
@@ -366,10 +370,11 @@ onMounted(() => {
 }
 
 .timeline-card {
-  background: white;
+  background: #0f172a;
   border-radius: 20px;
   padding: 1.25rem;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .timeline-title {
@@ -378,7 +383,7 @@ onMounted(() => {
 
 .timeline-entry .time {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.65);
 }
 
 .timeline-entry .title {
@@ -387,7 +392,7 @@ onMounted(() => {
 
 .timeline-entry .details {
   font-size: 0.9rem;
-  color: rgba(15, 23, 42, 0.7);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .table-wrapper {
@@ -397,6 +402,12 @@ onMounted(() => {
 
 .table-wrapper table {
   min-width: 420px;
+  color: #e5e7eb;
+}
+
+.table-wrapper td,
+.table-wrapper th {
+  word-break: break-word;
 }
 
 @media (max-width: 768px) {

@@ -219,6 +219,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  color: #e5e7eb;
+  background: #0b1220;
+  padding: clamp(1.25rem, 4vw, 2rem);
 }
 
 .hero {
@@ -231,11 +234,11 @@ onMounted(async () => {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .description {
-  color: rgba(15, 23, 42, 0.65);
+  color: rgba(226, 232, 240, 0.7);
   max-width: 520px;
 }
 
@@ -254,13 +257,14 @@ onMounted(async () => {
 .summary-card {
   padding: 1.25rem;
   border-radius: 20px;
-  background: white;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  background: #0f172a;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .summary-card .label {
   font-size: 0.9rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .summary-card h2 {
@@ -268,7 +272,7 @@ onMounted(async () => {
 }
 
 .summary-card .hint {
-  color: rgba(15, 23, 42, 0.6);
+  color: rgba(226, 232, 240, 0.65);
 }
 
 .cards-grid {
@@ -294,21 +298,27 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+.chat-line .content {
+  color: rgba(226, 232, 240, 0.8);
+  word-break: break-word;
+}
+
 .chat-line .time {
   font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.45);
+  color: rgba(226, 232, 240, 0.6);
 }
 
 .timeline-card {
-  background: white;
+  background: #0f172a;
   border-radius: 24px;
   padding: 1.5rem;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .timeline-entry .time {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.65);
 }
 
 .timeline-entry .title {
@@ -316,7 +326,7 @@ onMounted(async () => {
 }
 
 .timeline-entry .details {
-  color: rgba(15, 23, 42, 0.7);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .empty-cell {

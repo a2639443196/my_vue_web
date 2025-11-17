@@ -339,15 +339,17 @@ onMounted(loadData)
   flex-direction: column;
   gap: 1.5rem;
   padding: 6px;
+  color: #e5e7eb;
 }
 
 .hydration-hero {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.1rem;
-  background: linear-gradient(135deg, rgba(47, 112, 255, 0.12), rgba(76, 175, 80, 0.12));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(16, 185, 129, 0.12));
   border-radius: 20px;
   padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 @media (min-width: 769px) {
@@ -364,7 +366,7 @@ onMounted(loadData)
 }
 
 .description {
-  color: rgba(15, 23, 42, 0.65);
+  color: rgba(226, 232, 240, 0.72);
   max-width: 520px;
 }
 
@@ -384,23 +386,25 @@ onMounted(loadData)
 .stat-card {
   padding: 1rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  background: #0f172a;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .stat-card .label {
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.6);
+  color: rgba(226, 232, 240, 0.65);
 }
 
 .hero-form {
   padding: 1rem;
   border-radius: 18px;
-  background: white;
+  background: #0f172a;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .quick-chip-row {
@@ -431,10 +435,11 @@ onMounted(loadData)
 
 .calendar-card,
 .history-card {
-  background: white;
+  background: #0f172a;
   border-radius: 28px;
   padding: clamp(1rem, 3vw, 1.5rem);
-  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .calendar-head {
@@ -454,22 +459,23 @@ onMounted(loadData)
 .weekday-row span {
   text-align: center;
   font-size: 0.85rem;
-  color: rgba(15, 23, 42, 0.6);
+  color: rgba(226, 232, 240, 0.65);
 }
 
 .calendar-cell {
   min-height: 60px;
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.02);
+  background: rgba(15, 23, 42, 0.4);
   padding: 0.4rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 0.3rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
 }
 
 .calendar-cell.today {
-  border: 1px solid rgba(99, 102, 241, 0.6);
+  border: 1px solid rgba(96, 165, 250, 0.7);
 }
 
 .calendar-cell.muted {
@@ -482,8 +488,8 @@ onMounted(loadData)
 
 .pill {
   align-self: flex-start;
-  background: rgba(99, 102, 241, 0.1);
-  color: #4c1d95;
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
   border-radius: 999px;
   padding: 0.1rem 0.6rem;
   font-size: 0.8rem;
@@ -494,16 +500,22 @@ onMounted(loadData)
   -webkit-overflow-scrolling: touch;
 }
 
+.table-wrapper td,
+.table-wrapper th {
+  word-break: break-word;
+}
+
 .history-card table {
   width: 100%;
   min-width: 420px;
+  color: #e5e7eb;
 }
 
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.7);
   margin-bottom: 0.35rem;
 }
 

@@ -68,7 +68,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(244, 245, 251, 0.95);
+  background: rgba(12, 18, 30, 0.92);
   backdrop-filter: blur(12px);
 }
 
@@ -80,8 +80,8 @@ onMounted(async () => {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 3px solid rgba(99, 102, 241, 0.15);
-  border-top-color: #6366f1;
+  border: 3px solid rgba(96, 165, 250, 0.18);
+  border-top-color: #60a5fa;
   animation: spin 0.8s linear infinite;
   margin: 0 auto;
 }

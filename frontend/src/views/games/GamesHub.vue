@@ -87,6 +87,9 @@ const goProfile = () => router.push({ name: 'Profile' })
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: #0b1220;
+  color: #e5e7eb;
 }
 
 .hub-header {
@@ -102,7 +105,7 @@ const goProfile = () => router.push({ name: 'Profile' })
 
 .hub-header p {
   margin: 0;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(226, 232, 240, 0.7);
   max-width: 720px;
 }
 
@@ -117,7 +120,9 @@ const goProfile = () => router.push({ name: 'Profile' })
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
-  background: white;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .card-hero {
@@ -143,20 +148,20 @@ const goProfile = () => router.push({ name: 'Profile' })
 
 .card-body p {
   margin: 0;
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(226, 232, 240, 0.8);
 }
 
 .card-stats {
   display: grid;
   gap: 0.75rem;
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   padding: 0.75rem 1rem;
   border-radius: 16px;
 }
 
 .card-stats span {
   display: block;
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .card-stats strong {

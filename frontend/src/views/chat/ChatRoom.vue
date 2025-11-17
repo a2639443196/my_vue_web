@@ -306,8 +306,9 @@ const formatRelative = (value: string) =>
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: #0b1220;
   width: 100%;
+  color: #e5e7eb;
 }
 
 .chat-page--mobile {
@@ -324,8 +325,8 @@ const formatRelative = (value: string) =>
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e5e7;
+  background: rgba(15, 23, 42, 0.98);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
   flex-shrink: 0;
 }
 
@@ -352,7 +353,7 @@ const formatRelative = (value: string) =>
 
 .connection-status {
   font-size: 0.813rem;
-  color: #666666;
+  color: #cbd5e1;
   font-weight: 500;
 }
 
@@ -373,17 +374,22 @@ const formatRelative = (value: string) =>
 .title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .head-row.secondary {
   font-size: 0.875rem;
-  color: #666666;
+  color: #cbd5e1;
 }
 
 .user-name {
   font-weight: 600;
-  color: #333333;
+  color: #e5e7eb;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .online-btn {
@@ -399,7 +405,7 @@ const formatRelative = (value: string) =>
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #f5f5f7;
+  background: #0f172a;
   will-change: scroll-position;
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
@@ -420,8 +426,9 @@ const formatRelative = (value: string) =>
 }
 
 .chat-line.mine .bubble {
-  background: #007AFF;
-  color: white;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.28), rgba(59, 130, 246, 0.34));
+  color: #f8fafc;
+  border-color: rgba(96, 165, 250, 0.4);
 }
 
 .chat-line.mine .meta {
@@ -457,9 +464,13 @@ const formatRelative = (value: string) =>
   background: white;
   border-radius: 16px;
   padding: 9px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
   max-width: 82%;
   word-wrap: break-word;
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: #e5e7eb;
+  overflow-wrap: anywhere;
 }
 
 .meta {
@@ -468,24 +479,27 @@ const formatRelative = (value: string) =>
   font-size: 0.875rem;
   color: #666666;
   margin-bottom: 0.35rem;
+  word-break: break-word;
 }
 
 .content {
   white-space: pre-wrap;
-  color: #333333;
+  color: #e5e7eb;
   font-size: 16px;
   line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* 底部输入框 */
 .chat-input-bar {
   flex-shrink: 0;
-  background: #ffffff;
-  border-top: 1px solid #e5e5e7;
+  background: rgba(11, 18, 32, 0.98);
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
   position: sticky;
   bottom: 0;
   z-index: 5;
-  box-shadow: 0 -6px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .chat-input-bar--safe {
@@ -509,19 +523,19 @@ const formatRelative = (value: string) =>
   padding: 6px 16px;
   min-height: 48px;
   box-shadow: none;
-  background: #f7f8fa;
+  background: #111827;
 }
 
 .composer :deep(.v-textarea .v-field__input) {
   padding: 0;
   min-height: auto;
   font-size: 16px;
-  color: #1f2933;
+  color: #e5e7eb;
   opacity: 1;
 }
 
 .composer :deep(.v-textarea .v-field__input::placeholder) {
-  color: #94a3b8;
+  color: #9ca3af;
   opacity: 1;
 }
 
