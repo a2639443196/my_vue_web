@@ -1,30 +1,16 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
-@import './mobile-dark-theme.css';
+@import './mobile-ui-system.css';
 
-/* Global styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* 确保移动端基础设置 */
+html {
+  font-size: 16px; /* 防止自动缩放 */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
-html,
-body {
-  min-height: 100%;
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system,
-    BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  line-height: var(--leading-normal);
-}
-
-#app {
-  min-height: 100vh;
-  overflow-x: hidden;
-  background: var(--color-background);
-}
+/* 移除旧的全局样式，使用mobile-ui-system.css */
 
 /* Dark theme scrollbar styles */
 ::-webkit-scrollbar {

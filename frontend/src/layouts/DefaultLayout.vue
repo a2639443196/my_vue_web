@@ -62,32 +62,36 @@
       </template>
     </v-navigation-drawer>
 
-    <!-- Mobile: Top App Bar -->
-    <v-app-bar
+    <!-- Mobile: Top App Bar - 重新设计 -->
+    <div
       v-if="shouldUseMobileLayout && !isFullBleed"
-      height="56"
-      elevation="2"
-      density="comfortable"
-      :class="['mobile-app-bar', { 'mobile-app-bar--safe': hasSafeArea }]"
+      class="mobile-toolbar"
     >
-      <template #prepend>
-        <v-app-bar-nav-icon class="tap-target" @click="drawer = !drawer"></v-app-bar-nav-icon>
-      </template>
+      <!-- 返回/菜单按钮 -->
+      <button
+        class="mobile-toolbar__icon"
+        @click="drawer = !drawer"
+        aria-label="菜单"
+      >
+        <v-icon size="24">mdi-menu</v-icon>
+      </button>
 
-      <v-app-bar-title class="mobile-title text-body-1 font-weight-medium">
+      <!-- 标题 -->
+      <h1 class="mobile-toolbar__title">
         {{ pageTitle }}
-      </v-app-bar-title>
+      </h1>
 
-      <template #append>
-        <v-btn
-          icon
-          class="tap-target"
+      <!-- 右侧按钮 -->
+      <div class="flex--gap-2">
+        <button
+          class="mobile-toolbar__icon"
           to="/profile"
+          aria-label="个人资料"
         >
-          <v-icon size="22">mdi-account</v-icon>
-        </v-btn>
-      </template>
-    </v-app-bar>
+          <v-icon size="24">mdi-account</v-icon>
+        </button>
+      </div>
+    </div>
 
     <!-- Mobile: Navigation Drawer -->
     <v-navigation-drawer
@@ -148,25 +152,19 @@
       </template>
     </v-navigation-drawer>
 
-    <!-- Main content -->
+    <!-- Main content - 重新设计布局 -->
     <v-main
       class="layout-main"
-      :class="{ 'mobile-main': shouldUseMobileLayout }"
+      :class="{
+        'mobile-main': shouldUseMobileLayout,
+        'full-bleed': isFullBleed
+      }"
     >
-      <div
-        class="page-surface"
-        :class="{
-          'page-surface--mobile': shouldUseMobileLayout,
-          'page-surface--safe-bottom': shouldUseMobileLayout && hasSafeArea,
-          'page-surface--full': isFullBleed
-        }"
-      >
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-      </div>
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </v-main>
   </div>
 </template>
@@ -250,101 +248,57 @@ watch(
 .layout-shell {
   min-height: 100vh;
   display: flex;
-  background: #0f172a;
+  background-color: var(--color-bg-primary);
 }
 
 .layout-sidebar {
-  backdrop-filter: blur(18px);
-  background-color: rgba(30, 41, 59, 0.95);
-  border-right: 1px solid rgba(71, 85, 105, 0.3);
+  backdrop-filter: blur(20px);
+  background-color: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-primary);
 }
 
 .sidebar-profile {
-  background: rgba(59, 130, 246, 0.15);
-  border-radius: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-lg);
   border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .layout-main {
-  background: transparent;
+  background-color: var(--color-bg-primary);
   padding: 0;
 }
 
-.page-surface {
-  width: 100%;
-  margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(1.5rem, 2vw, 2.5rem);
-  min-height: 100%;
-  transition: padding 0.2s ease;
-}
-
-.page-surface--mobile {
-  padding: calc(12px + env(safe-area-inset-top, 0px)) clamp(16px, 6vw, 24px)
-    calc(20px + env(safe-area-inset-bottom, 0px));
-  gap: 1.25rem;
-}
-
-.page-surface--safe-bottom {
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-}
-
-.page-surface--full {
-  max-width: none;
-  padding: 0;
-  gap: 0;
-  height: 100%;
-}
-
-/* 移动端主内容区 */
 .mobile-main {
-  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  padding-top: var(--toolbar-height-safe);
 }
 
-.layout-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: clamp(1rem, 2vw, 2rem);
+.full-bleed {
+  padding: 0 !important;
 }
 
-.layout-container.pa-2,
-.layout-container.pa-4 {
-  padding: clamp(0.75rem, 4vw, 1.5rem) !important;
+/* Vuetify 组件深色主题适配 */
+:deep(.v-navigation-drawer) {
+  background-color: var(--color-bg-surface) !important;
+  border-right: 1px solid var(--color-border-primary) !important;
 }
 
-.mobile-app-bar {
-  padding: 6px 10px;
-  backdrop-filter: blur(12px);
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+:deep(.v-navigation-drawer .v-list-item-title) {
+  color: var(--color-text-primary) !important;
 }
 
-.mobile-app-bar--safe {
-  padding-top: calc(6px + env(safe-area-inset-top));
-  min-height: calc(56px + env(safe-area-inset-top));
+:deep(.v-navigation-drawer .v-list-item) {
+  color: var(--color-text-secondary) !important;
 }
 
-.mobile-title {
-  text-align: center;
-  font-weight: 600 !important;
-  color: #f1f5f9 !important;
-  font-size: 1.1rem !important;
+:deep(.v-navigation-drawer .v-list-item:hover) {
+  background-color: var(--color-bg-overlay) !important;
 }
 
-:deep(.tap-target) {
-  min-width: 42px;
-  min-height: 42px;
+:deep(.v-main) {
+  background-color: var(--color-bg-primary) !important;
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
+/* 过渡动画 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -356,89 +310,16 @@ watch(
 }
 
 /* 响应式优化 */
-@media (max-width: 600px) {
-  .layout-sidebar {
-    width: 100% !important;
-  }
-
-  .gradient-text {
-    font-size: 1.25rem;
-  }
-}
-
-/* 移动端边距优化 */
 @media (max-width: 768px) {
-  .mobile-main {
-    padding-top: calc(56px + env(safe-area-inset-top, 0px));
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-
-  .mobile-main .v-container {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-}
-
-/* 超小屏幕优化 */
-@media (max-width: 375px) {
-  .mobile-main .v-container {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-}
-
-@media (min-width: 960px) {
-  .layout-sidebar {
-    width: 220px !important;
-  }
-}
-
-@media (min-width: 1200px) {
-  .layout-sidebar {
-    width: 240px !important;
-  }
-}
-
-/* Dark theme app bar styles */
-:deep(.v-app-bar) {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  color: #f1f5f9 !important;
-}
-
-/* Navigation drawer dark theme */
-:deep(.v-navigation-drawer) {
-  background-color: rgba(30, 41, 59, 0.95) !important;
-  border-right: 1px solid rgba(71, 85, 105, 0.3);
-}
-
-:deep(.v-navigation-drawer .v-list-item-title) {
-  color: #f1f5f9 !important;
-}
-
-:deep(.v-navigation-drawer .v-list-item) {
-  color: #cbd5e1 !important;
-}
-
-:deep(.v-navigation-drawer .v-list-item:hover) {
-  background-color: rgba(59, 130, 246, 0.1) !important;
-}
-
-/* Add safe area support for mobile devices */
-@supports (padding: max(0px)) {
-  .v-bottom-navigation {
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-  }
-}
-
-@media (max-width: 960px) {
   .layout-shell {
     flex-direction: column;
-    min-height: 100vh;
   }
+}
 
-  .layout-main {
-    padding-bottom: 4rem;
+/* 桌面端优化 */
+@media (min-width: 961px) {
+  .layout-sidebar {
+    width: 240px !important;
   }
 }
 </style>

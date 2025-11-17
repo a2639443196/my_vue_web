@@ -1,172 +1,188 @@
 <template>
-  <div class="activities-page">
-    <section class="summary-grid">
-      <div class="summary-card">
-        <p class="eyebrow">今日抽烟</p>
-        <h2>{{ todaySmoking }} 支</h2>
-        <p class="hint">统计来自今日已记录的抽烟次数</p>
-      </div>
-      <div class="summary-card">
-        <p class="eyebrow">今日摸鱼</p>
-        <h2>{{ todaySlack }} 分钟</h2>
-        <p class="hint">以分钟为单位统计</p>
-      </div>
-      <div class="summary-card">
-        <p class="eyebrow">最近活动</p>
-        <h2>{{ activities.length }}</h2>
-        <p class="hint">近 30 条操作记录</p>
-      </div>
-    </section>
+  <div class="activities-page container main-content-with-toolbar">
+    <!-- 页面标题 -->
+    <div class="section">
+      <h1 class="section__title">活动记录</h1>
+      <p class="section__subtitle">记录您的日常活动，追踪健康数据</p>
+    </div>
 
-    <section class="forms-grid">
-      <v-card elevation="6" class="form-card">
-        <v-card-title>抽烟记录</v-card-title>
-        <v-card-subtitle>记录每一次抽烟的数量与心情，帮助自我觉察。</v-card-subtitle>
-
-        <v-card-text class="form-body">
-          <v-slider
-            v-model="smokingForm.count"
-            class="mt-4"
-            :min="1"
-            :max="10"
-            step="1"
-            thumb-label
-            label="数量（支）"
-          ></v-slider>
-
-          <v-select
-            v-model="smokingForm.mood"
-            :items="smokingMoods"
-            label="心情"
-            prepend-inner-icon="mdi-emoticon-outline"
-          ></v-select>
-
-          <v-textarea
-            v-model="smokingForm.notes"
-            rows="2"
-            label="简短描述（可选）"
-            auto-grow
-          ></v-textarea>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn color="primary" :loading="submitting.smoking" @click="submitSmoking">
-            记录抽烟
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-
-      <v-card elevation="6" class="form-card">
-        <v-card-title>摸鱼记录</v-card-title>
-        <v-card-subtitle>记录放松时刻，帮助平衡效率与休息。</v-card-subtitle>
-
-        <v-card-text class="form-body">
-          <v-text-field
-            v-model.number="slackForm.duration"
-            type="number"
-            min="5"
-            max="240"
-            step="5"
-            label="时长（分钟）"
-            prepend-inner-icon="mdi-timer-outline"
-          ></v-text-field>
-
-          <v-select
-            v-model="slackForm.mood"
-            :items="slackMoods"
-            label="心情"
-            prepend-inner-icon="mdi-emoticon-happy-outline"
-          ></v-select>
-
-          <v-textarea
-            v-model="slackForm.notes"
-            rows="2"
-            label="简短描述（可选）"
-            auto-grow
-          ></v-textarea>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn color="primary" :loading="submitting.slack" @click="submitSlack">
-            记录摸鱼
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </section>
-
-    <section class="history-grid">
-      <v-card elevation="4">
-        <v-card-title class="d-flex align-center justify-space-between">
-          <span>抽烟记录</span>
-          <v-chip size="small" variant="flat">{{ smokingRecords.length }}</v-chip>
-        </v-card-title>
-        <v-divider></v-divider>
-        <div class="table-wrapper">
-          <v-table density="comfortable">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>数量</th>
-                <th>心情</th>
-                <th>备注</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="record in smokingRecords" :key="record.id">
-                <td>{{ formatRecord(record.recorded_at) }}</td>
-                <td>{{ record.count }} 支</td>
-                <td>{{ translateMood(record.mood) }}</td>
-                <td>{{ record.notes || '--' }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </div>
-      </v-card>
-
-      <v-card elevation="4">
-        <v-card-title class="d-flex align-center justify-space-between">
-          <span>摸鱼记录</span>
-          <v-chip size="small" variant="flat">{{ slackRecords.length }}</v-chip>
-        </v-card-title>
-        <v-divider></v-divider>
-        <div class="table-wrapper">
-          <v-table density="comfortable">
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>时长</th>
-                <th>心情</th>
-                <th>备注</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="record in slackRecords" :key="record.id">
-                <td>{{ formatRecord(record.recorded_at) }}</td>
-                <td>{{ record.duration }} 分钟</td>
-                <td>{{ translateMood(record.mood) }}</td>
-                <td>{{ record.notes || '--' }}</td>
-              </tr>
-            </tbody>
-          </v-table>
-        </div>
-      </v-card>
-    </section>
-
-    <section class="timeline-card" v-if="activities.length">
-      <h3 class="timeline-title">最新活动</h3>
-      <v-timeline align="start" density="comfortable">
-        <v-timeline-item
-          v-for="item in activities"
-          :key="item.id"
-          :dot-color="item.category === 'smoking' ? 'primary' : item.category === 'slack' ? 'teal' : 'grey'"
-        >
-          <div class="timeline-entry">
-            <div class="time">{{ formatRecord(item.created_at) }}</div>
-            <div class="title">{{ renderTitle(item) }}</div>
-            <div class="details">{{ renderDetails(item) }}</div>
+    <!-- 统计概览 -->
+    <section class="summary-section">
+      <div class="summary-grid grid grid--3-cols">
+        <div class="summary-card card">
+          <div class="card__header">
+            <h3 class="card__title">今日抽烟</h3>
           </div>
-        </v-timeline-item>
-      </v-timeline>
+          <div class="card__content">
+            <div class="summary-number">{{ todaySmoking }}</div>
+            <p class="text-tertiary text-sm mt-2">支</p>
+            <p class="text-quaternary text-xs mt-1">统计来自今日已记录的抽烟次数</p>
+          </div>
+        </div>
+        <div class="summary-card card">
+          <div class="card__header">
+            <h3 class="card__title">今日摸鱼</h3>
+          </div>
+          <div class="card__content">
+            <div class="summary-number">{{ todaySlack }}</div>
+            <p class="text-tertiary text-sm mt-2">分钟</p>
+            <p class="text-quaternary text-xs mt-1">以分钟为单位统计</p>
+          </div>
+        </div>
+        <div class="summary-card card">
+          <div class="card__header">
+            <h3 class="card__title">最近活动</h3>
+          </div>
+          <div class="card__content">
+            <div class="summary-number">{{ activities.length }}</div>
+            <p class="text-tertiary text-sm mt-2">条记录</p>
+            <p class="text-quaternary text-xs mt-1">近 30 条操作记录</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 表单区域 -->
+    <section class="forms-section">
+      <div class="grid grid--2-cols">
+        <!-- 抽烟记录表单 -->
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">抽烟记录</h2>
+            <p class="card__subtitle">记录每一次抽烟的数量与心情，帮助自我觉察</p>
+          </div>
+          <div class="card__content">
+            <div class="form-group">
+              <label class="form-label">数量（支）</label>
+              <div class="slider-container">
+                <input
+                  type="range"
+                  v-model="smokingForm.count"
+                  :min="1"
+                  :max="10"
+                  step="1"
+                  class="slider"
+                />
+                <div class="slider-value">{{ smokingForm.count }}</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">心情</label>
+              <select v-model="smokingForm.mood" class="input">
+                <option v-for="mood in smokingMoods" :key="mood.value" :value="mood.value">
+                  {{ mood.title }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">简短描述（可选）</label>
+              <textarea
+                v-model="smokingForm.notes"
+                class="input"
+                rows="3"
+                placeholder="记录当时的心情或想法..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="card__footer">
+            <button
+              class="btn btn--primary btn--lg"
+              :class="{ 'btn--loading': submitting.smoking }"
+              :disabled="submitting.smoking"
+              @click="submitSmoking"
+            >
+              <span v-if="!submitting.smoking">记录抽烟</span>
+              <span v-else>记录中...</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 摸鱼记录表单 -->
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">摸鱼记录</h2>
+            <p class="card__subtitle">记录放松时刻，帮助平衡效率与休息</p>
+          </div>
+          <div class="card__content">
+            <div class="form-group">
+              <label class="form-label">时长（分钟）</label>
+              <input
+                v-model.number="slackForm.duration"
+                type="number"
+                :min="5"
+                :max="240"
+                :step="5"
+                class="input"
+                placeholder="输入时长"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">心情</label>
+              <select v-model="slackForm.mood" class="input">
+                <option v-for="mood in slackMoods" :key="mood.value" :value="mood.value">
+                  {{ mood.title }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">简短描述（可选）</label>
+              <textarea
+                v-model="slackForm.notes"
+                class="input"
+                rows="3"
+                placeholder="记录放松的内容..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="card__footer">
+            <button
+              class="btn btn--primary btn--lg"
+              :class="{ 'btn--loading': submitting.slack }"
+              :disabled="submitting.slack"
+              @click="submitSlack"
+            >
+              <span v-if="!submitting.slack">记录摸鱼</span>
+              <span v-else>记录中...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 活动时间线 -->
+    <section class="timeline-section" v-if="activities.length">
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">最新活动</h2>
+          <p class="card__subtitle">查看您的最近活动记录</p>
+        </div>
+        <div class="card__content">
+          <div class="timeline">
+            <div
+              v-for="item in activities"
+              :key="item.id"
+              class="timeline-item"
+            >
+              <div class="timeline-item__dot" :class="`timeline-item__dot--${item.category}`"></div>
+              <div class="timeline-item__content">
+                <div class="timeline-item__time text-quaternary text-sm">
+                  {{ formatRecord(item.created_at) }}
+                </div>
+                <div class="timeline-item__title font-semibold text-primary">
+                  {{ renderTitle(item) }}
+                </div>
+                <div class="timeline-item__details text-secondary text-word-break">
+                  {{ renderDetails(item) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -301,219 +317,239 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 页面布局 */
 .activities-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  padding: 4px;
-  background: #0f172a;
+  padding-bottom: var(--space-6);
+  background-color: var(--color-bg-primary);
+}
+
+/* 统计概览区域 */
+.summary-section {
+  margin-bottom: var(--space-6);
 }
 
 .summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .summary-card {
-  padding: 1rem 1.1rem;
-  border-radius: 18px;
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }
 
-.eyebrow {
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #94a3b8;
+.summary-number {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-1);
 }
 
-.hint {
-  color: #64748b;
-  margin-top: 0.4rem;
-  font-size: 0.875rem;
-  line-height: 1.4;
+/* 表单区域 */
+.forms-section {
+  margin-bottom: var(--space-6);
 }
 
-.summary-card h2 {
-  color: #f1f5f9;
-  margin: 0.5rem 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+.form-group {
+  margin-bottom: var(--space-4);
 }
 
-.forms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+.form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
 }
 
-.form-card {
-  border-radius: 20px;
+/* 自定义滑块 */
+.slider-container {
+  position: relative;
+  padding: var(--space-2) 0;
 }
 
-.form-card :deep(.v-card-title) {
-  padding-bottom: 4px;
+.slider {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
-.form-card :deep(.v-card-subtitle) {
-  padding-top: 0;
-  line-height: 1.4;
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
-.form-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding-top: 0.75rem;
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
-.history-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
+.slider-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  min-width: 32px;
+  text-align: center;
 }
 
-.timeline-card {
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105, 0.2);
-  border-radius: 20px;
-  padding: 1.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+/* 时间线区域 */
+.timeline-section {
+  margin-bottom: var(--space-6);
 }
 
-.timeline-title {
-  margin: 0 0 1rem;
-  color: #f1f5f9;
-  font-size: 1.25rem;
-  font-weight: 600;
+.timeline {
+  position: relative;
+  padding-left: var(--space-4);
 }
 
-.timeline-entry .time {
-  font-size: 0.85rem;
-  color: #94a3b8;
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: var(--color-border-secondary);
 }
 
-.timeline-entry .title {
-  font-weight: 600;
-  color: #cbd5e1;
+.timeline-item {
+  position: relative;
+  padding-bottom: var(--space-5);
+  padding-left: var(--space-5);
 }
 
-.timeline-entry .details {
-  font-size: 0.9rem;
-  color: #94a3b8;
-  line-height: 1.4;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+.timeline-item:last-child {
+  padding-bottom: 0;
 }
 
-.table-wrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+.timeline-item__dot {
+  position: absolute;
+  left: -20px;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-surface);
+  z-index: 1;
 }
 
-.table-wrapper table {
-  min-width: 420px;
+.timeline-item__dot--smoking {
+  background-color: var(--color-primary);
 }
 
+.timeline-item__dot--slack {
+  background-color: var(--color-info);
+}
+
+.timeline-item__content {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+
+.timeline-item__time {
+  margin-bottom: var(--space-1);
+}
+
+.timeline-item__title {
+  margin-bottom: var(--space-1);
+}
+
+.timeline-item__details {
+  line-height: var(--line-height-normal);
+}
+
+/* 加载状态 */
+.btn--loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn--loading:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 移动端优化 */
 @media (max-width: 768px) {
   .activities-page {
-    gap: 0.75rem;
-    padding: 8px 4px;
-  }
-
-  .form-actions {
-    flex-direction: column;
+    padding-bottom: var(--space-8);
   }
 
   .summary-grid {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
-  .summary-card {
-    padding: 14px 16px;
-    border-radius: 14px;
-    margin: 0;
+  .summary-number {
+    font-size: var(--font-size-2xl);
   }
 
-  .summary-card h2 {
-    font-size: 1.75rem;
+  .forms-section .grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
   }
 
-  .hint {
-    font-size: 0.8rem;
+  .timeline {
+    padding-left: var(--space-3);
   }
 
-  .form-card {
-    border-radius: 16px;
-    margin: 0;
+  .timeline::before {
+    left: 6px;
   }
 
-  .form-card :deep(.v-card-text) {
-    padding: 16px 16px 8px;
+  .timeline-item {
+    padding-left: var(--space-4);
+    padding-bottom: var(--space-4);
   }
 
-  .timeline-card {
-    padding: 16px;
-    border-radius: 16px;
-    margin: 0;
+  .timeline-item__dot {
+    left: -16px;
+    width: 14px;
+    height: 14px;
   }
 
-  .timeline-title {
-    font-size: 1.125rem;
-  }
-
-  .timeline-entry .title {
-    font-size: 0.95rem;
-  }
-
-  .timeline-entry .details {
-    font-size: 0.85rem;
-  }
-
-  .forms-grid {
-    gap: 0.75rem;
-  }
-
-  .history-grid {
-    gap: 0.75rem;
-  }
-
-  /* 超小屏幕优化 */
-  @media (max-width: 375px) {
-    .summary-card {
-      padding: 12px 14px;
-    }
-
-    .timeline-card {
-      padding: 14px;
-    }
-
-    .form-card :deep(.v-card-text) {
-      padding: 14px;
-    }
-
-    .activities-page {
-      padding: 4px 2px;
-      gap: 0.65rem;
-    }
-
-    .summary-grid, .forms-grid, .history-grid {
-      gap: 0.65rem;
-    }
+  .timeline-item__content {
+    padding: var(--space-2) var(--space-3);
   }
 }
 
-@media (min-width: 769px) {
-  .forms-grid {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+/* 小屏幕优化 */
+@media (max-width: 375px) {
+  .summary-number {
+    font-size: var(--font-size-xl);
   }
 
-  .history-grid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  .slider-value {
+    min-width: 28px;
+    font-size: var(--font-size-xs);
+  }
+
+  .timeline-item__content {
+    padding: var(--space-2);
   }
 }
 </style>

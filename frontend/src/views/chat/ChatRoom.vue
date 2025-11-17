@@ -1,93 +1,92 @@
 <template>
-  <div
-    class="chat-page"
-    :class="{
-      'chat-page--mobile': shouldUseMobileLayout,
-      'chat-page--safe': hasSafeArea && shouldUseMobileLayout
-    }"
-  >
-    <!-- 固定头部 -->
-    <header class="chat-head" ref="headerRef">
-      <div class="head-content">
-        <div class="head-row primary">
-          <v-btn
-            icon="mdi-arrow-left"
-            variant="text"
-            class="back-btn"
-            @click="$router.back()"
-          ></v-btn>
-          <span class="status-dot" :class="{ online: isConnected }"></span>
-          <span class="title">彦祖聊天室</span>
-          <v-spacer></v-spacer>
-          <v-btn
-            icon="mdi-account-multiple"
-            variant="text"
-            class="members-btn"
-            @click="showMembers = true"
+  <div class="chat-container main-content-with-toolbar">
+    <!-- 自定义顶部栏 - 替换原有header -->
+    <div class="mobile-toolbar chat-toolbar">
+      <button class="mobile-toolbar__icon" @click="$router.back()" aria-label="返回">
+        <v-icon size="24">mdi-arrow-left</v-icon>
+      </button>
+
+      <h1 class="mobile-toolbar__title">彦祖聊天室</h1>
+
+      <div class="flex--gap-2">
+        <!-- 连接状态指示器 -->
+        <div class="chat-status-indicator">
+          <div class="status-dot" :class="{ online: isConnected }"></div>
+        </div>
+
+        <!-- 在线用户按钮 -->
+        <button
+          class="mobile-toolbar__icon"
+          @click="showMembers = true"
+          aria-label="在线用户"
+        >
+          <v-badge
+            :content="onlineUsers.length.toString()"
+            :model-value="onlineUsers.length > 0"
+            color="var(--color-primary)"
           >
-            <v-badge
-              :content="onlineUsers.length.toString()"
-              :model-value="onlineUsers.length > 0"
-              color="primary"
-            >
-              <v-icon>mdi-account-multiple</v-icon>
-            </v-badge>
-          </v-btn>
-        </div>
-        <div class="head-row secondary">
-          <span class="user-name">{{ userStore.userDisplayName }}</span>
-          <span class="connection-status">{{ isConnected ? '已连接' : '连接中...' }}</span>
-        </div>
+            <v-icon size="24">mdi-account-multiple</v-icon>
+          </v-badge>
+        </button>
       </div>
-    </header>
+    </div>
+
+    <!-- 用户信息条 -->
+    <div class="chat-user-info">
+      <span class="text-secondary">{{ userStore.userDisplayName }}</span>
+      <span class="text-tertiary">{{ isConnected ? '已连接' : '连接中...' }}</span>
+    </div>
 
     <!-- 消息区域 -->
     <section
       ref="messageContainer"
-      class="chat-feed"
+      class="chat-messages"
       :style="chatFeedStyle"
     >
-      <div class="feed-content">
+      <div class="chat-messages__content">
         <div
           v-for="message in messages"
           :key="message.id"
-          :class="['chat-line', {
-            mine: message.userId === currentUserId && !message.isSystem,
-            system: message.isSystem
+          :class="['chat-message', {
+            'chat-message--mine': message.userId === currentUserId && !message.isSystem,
+            'chat-message--system': message.isSystem
           }]"
         >
-          <div v-if="!message.isSystem" class="avatar">
-            <v-avatar size="36" color="primary">
+          <!-- 头像 -->
+          <div v-if="!message.isSystem" class="chat-message__avatar">
+            <div class="avatar">
               <template v-if="!message.avatar">
                 {{ message.username.slice(0, 1).toUpperCase() }}
               </template>
               <img v-else :src="message.avatar" :alt="message.username" />
-            </v-avatar>
+            </div>
           </div>
-          <div class="bubble">
+
+          <!-- 消息气泡 -->
+          <div class="chat-message__bubble">
             <template v-if="message.isSystem">
-              <div class="system-text">{{ message.content }}</div>
+              <div class="chat-message__system-content text-word-break">
+                {{ message.content }}
+              </div>
             </template>
             <template v-else>
-              <div class="meta">
-                <span class="author">{{ message.username }}</span>
-                <span class="time">{{ formatTime(message.createdAt) }}</span>
+              <div class="chat-message__meta">
+                <span class="chat-message__author">{{ message.username }}</span>
+                <span class="chat-message__time">{{ formatTime(message.createdAt) }}</span>
               </div>
-              <div class="content">{{ message.content }}</div>
+              <div class="chat-message__content text-word-break">
+                {{ message.content }}
+              </div>
             </template>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 固定底部输入框 -->
-    <footer
-      class="chat-input-bar"
-      :class="{ 'chat-input-bar--safe': shouldUseMobileLayout && hasSafeArea }"
-      ref="inputBarRef"
-    >
-      <div class="input-content">
-        <div class="composer">
+    <!-- 底部输入框 -->
+    <footer class="chat-input" ref="inputBarRef">
+      <div class="chat-input__content">
+        <div class="chat-input__field">
           <v-textarea
             v-model="draft"
             auto-grow
@@ -97,22 +96,22 @@
             placeholder="输入内容开始聊天（Enter 发送，Shift + Enter 换行）"
             @focus="handleComposerFocus"
             @keydown.enter.prevent="handleEnter"
-            bg-color="#f5f5f7"
-            color="#1f2933"
-            base-color="#1f2933"
+            bg-color="var(--color-bg-elevated)"
+            color="var(--color-text-primary)"
+            base-color="var(--color-border-primary)"
             hide-details
+            class="chat-textarea"
           ></v-textarea>
         </div>
-        <v-btn
-          color="primary"
-          class="send-btn"
+        <button
+          class="chat-input__send-btn"
+          :class="{ 'chat-input__send-btn--disabled': !draft.trim() }"
           :disabled="!draft.trim()"
           @click="sendMessage"
-          icon
-          elevation="0"
+          aria-label="发送消息"
         >
-          <v-icon>mdi-send</v-icon>
-        </v-btn>
+          <v-icon size="20">mdi-send</v-icon>
+        </button>
       </div>
     </footer>
 
@@ -301,354 +300,350 @@ const formatRelative = (value: string) =>
 </script>
 
 <style scoped>
-.chat-page {
+/* 聊天容器 */
+.chat-container {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #0f172a;
+  background-color: var(--color-bg-primary);
   width: 100%;
 }
 
-.chat-page--mobile {
-  min-height: calc(100vh - 56px);
-  min-height: calc(100dvh - 56px);
+/* 聊天顶部栏样式 */
+.chat-toolbar {
+  background-color: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-primary);
 }
 
-.chat-page--safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* 头部 */
-.chat-head {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: #1e293b;
-  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
-  flex-shrink: 0;
-}
-
-.head-content {
-  padding: 10px 14px;
-}
-
-.head-row {
+.chat-status-indicator {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.head-row.primary {
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
-  align-items: center;
-}
-
-.back-btn,
-.members-btn {
-  margin: 0;
-}
-
-.connection-status {
-  font-size: 0.813rem;
-  color: #94a3b8;
-  font-weight: 500;
 }
 
 .status-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #475569;
-  display: inline-block;
+  background-color: var(--color-text-quaternary);
   flex-shrink: 0;
 }
 
 .status-dot.online {
-  background: #22c55e;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+  background-color: var(--color-success);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
 
-.title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #f1f5f9;
-}
-
-.head-row.secondary {
-  font-size: 0.875rem;
-  color: #94a3b8;
-}
-
-.user-name {
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.online-btn {
-  text-transform: none;
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: #333333;
+/* 用户信息条 */
+.chat-user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-primary);
 }
 
 /* 消息区域 */
-.chat-feed {
-  flex: 0 0 auto;
-  min-height: 0;
+.chat-messages {
+  flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #0f172a;
-  will-change: scroll-position;
+  background-color: var(--color-bg-primary);
   scroll-behavior: smooth;
   overscroll-behavior-y: contain;
-  scrollbar-gutter: stable both-edges;
 }
 
-.feed-content {
-  padding: 14px 16px;
+.chat-messages__content {
+  padding: var(--space-4);
   max-width: 100%;
 }
 
-.chat-line {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
+/* 消息行 */
+.chat-message {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
   align-items: flex-start;
 }
 
-.chat-line.mine .bubble {
-  background: #007AFF;
-  color: white;
+.chat-message--mine {
+  flex-direction: row-reverse;
 }
 
-.chat-line.mine .meta {
-  color: rgba(255, 255, 255, 0.85);
+.chat-message--system {
+  justify-content: center;
+  margin-bottom: var(--space-3);
 }
 
-.chat-line.mine .content {
-  color: white;
-  font-size: 16px;
-}
-
-.chat-line.mine {
-  justify-content: end;
-}
-
-.chat-line.mine .bubble {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.14), rgba(99, 102, 241, 0.18));
-}
-
-.chat-line.system {
-  grid-template-columns: 1fr;
-}
-
-.chat-line.system .bubble {
-  background: transparent;
-  text-align: center;
-  box-shadow: none;
-  color: #888888;
-  font-size: 0.875rem;
-}
-
-.bubble {
-  background: #1e293b;
-  border: 1px solid rgba(71, 85, 105, 0.2);
-  border-radius: 16px;
-  padding: 9px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  max-width: 82%;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-}
-
-.meta {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #94a3b8;
-  margin-bottom: 0.35rem;
-}
-
-.content {
-  white-space: pre-wrap;
-  color: #f1f5f9;
-  font-size: 16px;
-  line-height: 1.5;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-/* 底部输入框 */
-.chat-input-bar {
+/* 头像 */
+.chat-message__avatar {
   flex-shrink: 0;
-  background: #1e293b;
-  border-top: 1px solid rgba(71, 85, 105, 0.3);
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
-  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.3);
 }
 
-.chat-input-bar--safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  overflow: hidden;
 }
 
-.input-content {
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 消息气泡 */
+.chat-message__bubble {
+  max-width: 70%;
+  min-width: 0;
+}
+
+.chat-message--mine .chat-message__bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.chat-message--system .chat-message__bubble {
+  text-align: center;
+  max-width: 80%;
+}
+
+/* 系统消息 */
+.chat-message__system-content {
+  background-color: transparent;
+  color: var(--color-text-quaternary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+/* 普通消息 */
+.chat-message__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-xs);
+}
+
+.chat-message--mine .chat-message__meta {
+  flex-direction: row-reverse;
+}
+
+.chat-message__author {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.chat-message__time {
+  color: var(--color-text-quaternary);
+}
+
+.chat-message__content {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.chat-message--mine .chat-message__content {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.chat-message--mine .chat-message__author,
+.chat-message--mine .chat-message__time {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 输入框 */
+.chat-input {
+  flex-shrink: 0;
+  background-color: var(--color-bg-surface);
+  border-top: 1px solid var(--color-border-primary);
+  padding-bottom: var(--safe-bottom);
+}
+
+.chat-input__content {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
-.composer {
+.chat-input__field {
   flex: 1;
-  min-height: 48px;
+  min-height: var(--input-height);
 }
 
-.composer :deep(.v-textarea .v-field) {
-  border-radius: 24px;
-  padding: 6px 16px;
-  min-height: 48px;
+.chat-textarea :deep(.v-field) {
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-primary);
   box-shadow: none;
-  background: #0f172a;
-  border: 1px solid rgba(71, 85, 105, 0.3);
+  min-height: var(--input-height);
 }
 
-.composer :deep(.v-textarea .v-field__input) {
-  padding: 0;
-  min-height: auto;
-  font-size: 16px;
-  color: #f1f5f9;
-  opacity: 1;
+.chat-textarea :deep(.v-field__input) {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  padding: var(--space-3) var(--space-3);
+  min-height: var(--input-height);
+  line-height: var(--line-height-normal);
 }
 
-.composer :deep(.v-textarea .v-field__input::placeholder) {
-  color: #64748b;
-  opacity: 1;
+.chat-textarea :deep(.v-field__input::placeholder) {
+  color: var(--color-text-quaternary);
 }
 
-.composer :deep(.v-textarea .v-field__outline) {
+.chat-textarea :deep(.v-field__outline) {
   display: none;
 }
 
-.send-btn {
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 50% !important;
-  flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
-}
-
-.member-list {
-  max-height: 420px;
-  overflow-y: auto;
-  padding-top: 1rem;
-}
-
-.member-item {
+/* 发送按钮 */
+.chat-input__send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  border: none;
+  color: white;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-md);
 }
 
-.member-meta .name {
-  font-weight: 600;
-  color: #f1f5f9;
+.chat-input__send-btn:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
 }
 
-.member-meta .time {
-  font-size: 0.8rem;
-  color: #94a3b8;
+.chat-input__send-btn:active {
+  transform: scale(0.95);
 }
 
-.empty {
+.chat-input__send-btn--disabled {
+  background-color: var(--color-bg-overlay);
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.chat-input__send-btn--disabled:hover {
+  transform: none;
+  background-color: var(--color-bg-overlay);
+  box-shadow: none;
+}
+
+/* 成员列表样式 */
+:deep(.member-list) {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+:deep(.member-item) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+:deep(.member-meta .name) {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+:deep(.member-meta .time) {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
+:deep(.empty) {
   text-align: center;
-  color: #64748b;
-  padding: 1rem 0;
+  color: var(--color-text-quaternary);
+  padding: var(--space-6) 0;
+  font-size: var(--font-size-sm);
 }
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-  .chat-page {
-    background: #0f172a;
+  .chat-messages__content {
+    padding: var(--space-3);
   }
 
-  .feed-content {
-    padding: 10px 12px;
+  .chat-message {
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
   }
 
-  .chat-line {
-    gap: 6px;
-    margin-bottom: 10px;
+  .chat-message__bubble {
+    max-width: 80%;
   }
 
-  .bubble {
-    max-width: 88%;
-    padding: 8px 11px;
-    font-size: 15px;
-    border-radius: 14px;
+  .chat-message__content {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-base);
   }
 
-  .meta {
-    font-size: 12px;
-    margin-bottom: 4px;
+  .chat-input__content {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
   }
 
-  .content {
-    font-size: 15px;
-    line-height: 1.4;
+  .avatar {
+    width: 32px;
+    height: 32px;
+    font-size: var(--font-size-sm);
   }
 
-  .input-content {
-    padding: 12px 14px;
-    gap: 10px;
-  }
-
-  .composer :deep(.v-textarea .v-field__input) {
-    font-size: 16px;
-    padding: 8px 0;
-  }
-
-  .composer :deep(.v-textarea .v-field) {
-    min-height: 52px;
-    padding: 8px 18px;
-  }
-
-  .title {
-    font-size: 1.125rem;
-  }
-
-  .head-row.secondary {
-    font-size: 0.813rem;
-  }
-
-  .head-content {
-    padding: 6px 8px;
-    padding-top: calc(6px + env(safe-area-inset-top));
-  }
-
-  :deep(.v-btn--icon) {
-    width: 42px;
-    height: 42px;
+  .chat-user-info {
+    padding: var(--space-2) var(--space-3);
   }
 }
 
+/* 小屏幕优化 */
 @media (max-width: 375px) {
-  .feed-content {
-    padding: 12px 10px 88px;
+  .chat-messages__content {
+    padding: var(--space-2);
   }
 
-  .input-content {
-    padding: 10px 12px;
+  .chat-message__bubble {
+    max-width: 85%;
   }
 
-  .bubble {
-    padding: 6px 10px;
+  .chat-message__content {
+    padding: var(--space-2);
+    font-size: var(--font-size-sm);
+  }
+
+  .chat-input__content {
+    padding: var(--space-2);
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: var(--font-size-xs);
   }
 }
 </style>
