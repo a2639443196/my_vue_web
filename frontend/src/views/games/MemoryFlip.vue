@@ -187,7 +187,16 @@ const checkMatch = async () => {
 const finishGame = async () => {
   isPlaying.value = false
   stopTimer()
-  await gamesStore.saveResult({ gameType: 'memory', score: moves.value, durationMs: elapsed.value })
+  await gamesStore.saveResult({
+    gameType: 'memory',
+    score: moves.value,
+    durationMs: elapsed.value,
+    metadata: {
+      gridSize: gridSize.value,
+      pairs: pairCount,
+      moves: moves.value
+    }
+  })
 }
 
 onMounted(async () => {

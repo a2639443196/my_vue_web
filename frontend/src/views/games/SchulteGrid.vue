@@ -67,15 +67,6 @@
           <Icon icon="lucide:rotate-ccw" class="w-5 h-5" />
         </Button>
       </div>
-
-      <GlassCard v-if="!isPlaying">
-        <h4 class="mb-3">游戏说明</h4>
-        <ul class="space-y-2 text-sm text-secondary">
-          <li>• 按顺序点击数字 1 到 {{ difficulty * difficulty }}</li>
-          <li>• 越快完成得分越高</li>
-          <li>• 可以锻炼注意力和视觉搜索能力</li>
-        </ul>
-      </GlassCard>
     </main>
   </div>
 </template>
@@ -148,7 +139,12 @@ const finishGame = async () => {
   isPlaying.value = false
   stopTimer()
   const final = elapsedTime.value
-  await gamesStore.saveResult({ gameType: 'schulte', score: Number(formatTime(final)), durationMs: final, metadata: { difficulty: difficulty.value } })
+  await gamesStore.saveResult({
+    gameType: 'schulte',
+    score: Number(formatTime(final)),
+    durationMs: final,
+    metadata: { difficulty: difficulty.value, gridSize: difficulty.value }
+  })
 }
 
 const formatTime = (ms: number) => (ms / 1000).toFixed(2)

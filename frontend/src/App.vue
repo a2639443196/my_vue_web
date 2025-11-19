@@ -3,7 +3,7 @@
     <div v-if="systemLoading" class="app-loading">
       <div class="loader">
         <div class="spinner"></div>
-        <p class="mt-4 text-secondary text-sm">{{ $t('app.loading') }}</p>
+        <p class="mt-4 text-secondary text-sm">加载中...</p>
       </div>
     </div>
 

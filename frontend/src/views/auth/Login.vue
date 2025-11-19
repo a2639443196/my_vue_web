@@ -11,14 +11,14 @@
 
       <form class="space-y-5" @submit.prevent="handleSubmit">
         <div class="space-y-2">
-          <Label for-id="username">用户名 / 邮箱</Label>
+          <Label for-id="username">用户名</Label>
           <div class="relative">
             <Icon icon="lucide:mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[rgb(var(--muted-foreground))]" />
             <Input
               id="username"
-              v-model="form.phone"
+              v-model="form.username"
               type="text"
-              placeholder="your@email.com"
+              placeholder="请输入用户名"
               class="pl-12 h-12"
             />
           </div>
@@ -55,23 +55,6 @@
         </Button>
       </form>
 
-      <div class="flex items-center gap-4 my-8">
-        <div class="flex-1 h-px bg-white/10" />
-        <span class="caption">或使用第三方登录</span>
-        <div class="flex-1 h-px bg-white/10" />
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <Button variant="outline" class="h-12 border-white/10">
-          <Icon icon="lucide:chrome" class="w-5 h-5 mr-2" />
-          Google
-        </Button>
-        <Button variant="outline" class="h-12 border-white/10">
-          <Icon icon="lucide:github" class="w-5 h-5 mr-2" />
-          GitHub
-        </Button>
-      </div>
-
       <div class="text-center mt-8">
         <button class="text-[rgb(var(--primary))] hover:underline" @click="goRegister">
           还没有账号？立即注册
@@ -100,20 +83,20 @@ const showPassword = ref(false)
 const error = ref('')
 
 const form = reactive({
-  phone: '',
+  username: '',
   password: ''
 })
 
 const handleSubmit = async () => {
   error.value = ''
-  if (!form.phone.trim() || !form.password) {
+  if (!form.username.trim() || !form.password) {
     error.value = '请填写所有字段'
     return
   }
 
   try {
     await userStore.login({
-      username: form.phone.trim(),
+      username: form.username.trim(),
       password: form.password
     })
     notificationStore.showSuccess('登录成功，欢迎回来！')

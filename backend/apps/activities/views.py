@@ -14,11 +14,11 @@ from .serializers import (
 from .models import Activity, WaterIntake, BowelMovement, SmokingRecord, SlackRecord, DrinkOption
 
 DEFAULT_DRINKS = [
-    {'name': '纯净水 300ml', 'amount': 300, 'icon': 'mdi-cup-water'},
-    {'name': '绿茶 350ml', 'amount': 350, 'icon': 'mdi-tea'},
-    {'name': '美式咖啡 240ml', 'amount': 240, 'icon': 'mdi-coffee', 'caffeine_mg': 120},
-    {'name': '能量饮料 250ml', 'amount': 250, 'icon': 'mdi-flash'},
-    {'name': '牛奶 250ml', 'amount': 250, 'icon': 'mdi-cow'},
+    {'name': '纯净水', 'amount': 300, 'icon': 'mdi-cup-water'},
+    {'name': '绿茶', 'amount': 350, 'icon': 'mdi-tea'},
+    {'name': '美式咖啡', 'amount': 240, 'icon': 'mdi-coffee', 'caffeine_mg': 120},
+    {'name': '能量饮料', 'amount': 250, 'icon': 'mdi-flash'},
+    {'name': '牛奶', 'amount': 250, 'icon': 'mdi-cow'},
 ]
 
 
@@ -127,7 +127,7 @@ def create_water_intake(request):
             data['amount'] = drink.amount
     else:
         if not drink_name:
-            data['drink_name'] = '自定义饮品'
+            data['drink_name'] = '纯净水'
 
     if not data.get('recorded_at'):
         data['recorded_at'] = timezone.now().isoformat()

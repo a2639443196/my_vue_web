@@ -149,7 +149,19 @@ const finish = async () => {
   attempts.value = [...attempts.value, time].slice(-5)
   state.value = 'result'
   clearTimer()
-  await gamesStore.saveResult({ gameType: 'reaction', score: time, durationMs: time })
+  const averageTime = Math.round(attempts.value.reduce((a, b) => a + b, 0) / attempts.value.length)
+  const bestTime = Math.min(...attempts.value)
+  await gamesStore.saveResult({
+    gameType: 'reaction',
+    score: time,
+    durationMs: time,
+    attempts: attempts.value.length,
+    metadata: {
+      averageTime,
+      bestTime,
+      attempts: attempts.value.length
+    }
+  })
 }
 
 const handleReset = () => {

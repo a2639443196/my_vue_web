@@ -6,6 +6,7 @@ export const useHydrationStore = defineStore('hydration', () => {
   const entries = ref<HydrationEntry[]>([])
   const stats = ref<HydrationStats | null>(null)
   const loading = ref(false)
+  const creating = ref(false)
   const error = ref<string | null>(null)
 
   const todayTotal = computed(() => stats.value?.today ?? 0)
@@ -36,18 +37,30 @@ export const useHydrationStore = defineStore('hydration', () => {
   }
 
   const createEntry = async (payload: CreateHydrationPayload) => {
-    loading.value = true
+    creating.value = true
     error.value = null
     try {
       const entry = await hydrationApi.createEntry(payload)
+      // Add to existing entries at the beginning
       entries.value = [entry, ...entries.value]
-      await fetchStats()
+
+      // Update stats locally to avoid unnecessary API calls that could cause refreshes
+      if (stats.value) {
+        stats.value.today += entry.amount
+        // Update weekly data if needed
+        const today = new Date().toISOString().split('T')[0]
+        const weeklyEntry = stats.value.weekly.find(w => w.date === today)
+        if (weeklyEntry) {
+          weeklyEntry.total += entry.amount
+        }
+      }
+
       return entry
     } catch (e: any) {
       error.value = e.message
       throw e
     } finally {
-      loading.value = false
+      creating.value = false
     }
   }
 
@@ -56,6 +69,7 @@ export const useHydrationStore = defineStore('hydration', () => {
     stats,
     loading,
     error,
+    creating,
     todayTotal,
     goal,
     fetchEntries,

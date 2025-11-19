@@ -95,10 +95,10 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <Icon icon="lucide:coffee" class="w-5 h-5 text-orange-400" />
-              <span>咖啡因摄入</span>
+              <Icon icon="lucide:droplet" class="w-5 h-5 text-blue-400" />
+              <span>饮水摄入</span>
             </div>
-            <span>{{ caffeineStat }}</span>
+            <span>{{ waterIntakeStat }}</span>
           </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -148,11 +148,10 @@ const goal = computed(() => hydrationStore.goal)
 const todayHydration = computed(() => hydrationStore.todayTotal)
 const completion = computed(() => Math.min(Math.round((todayHydration.value / goal.value) * 100), 100))
 
-const caffeineStat = computed(() => {
-  // If hydration stats include caffeine, use it; otherwise show placeholder zero
-  const today = hydrationStore.stats?.today ?? 0
-  const limit = hydrationStore.stats?.goal ?? 2000
-  return `${today} / ${limit}mg`
+const waterIntakeStat = computed(() => {
+  const today = hydrationStore.todayTotal ?? 0
+  const limit = hydrationStore.goal ?? 2000
+  return `${today} / ${limit}ml`
 })
 
 const trainingCount = computed(() => gamesStore.userSummary?.totals.plays ?? 0)
@@ -169,17 +168,14 @@ const recentActivities = computed(() => {
   }))
 })
 
-const goDashboard = () => router.push({ name: 'Dashboard' })
-const goWater = () => router.push({ name: 'WaterTracker' })
+const goDashboard = () => router.push({ name: 'Dashboard' }).catch(err => console.error('Navigation error:', err))
+const goWater = () => router.push({ name: 'WaterTracker' }).catch(err => console.error('Navigation error:', err))
 const goGames = (tab?: string) => {
-  if (tab === 'reaction') {
-    router.push({ name: 'ReactionTime' })
-  } else {
-    router.push({ name: 'Games' })
-  }
+  const targetRoute = tab === 'reaction' ? { name: 'ReactionTime' } : { name: 'Games' }
+  router.push(targetRoute).catch(err => console.error('Navigation error:', err))
 }
-const goChat = () => router.push({ name: 'ChatRoom' })
-const goActivities = () => router.push({ name: 'Activities' })
+const goChat = () => router.push({ name: 'ChatRoom' }).catch(err => console.error('Navigation error:', err))
+const goActivities = () => router.push({ name: 'Activities' }).catch(err => console.error('Navigation error:', err))
 
 onMounted(async () => {
   await userStore.initialize()

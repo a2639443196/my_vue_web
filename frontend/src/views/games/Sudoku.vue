@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import TopNav from '@/components/TopNav.vue'
 import GlassCard from '@/components/GlassCard.vue'
@@ -99,22 +99,63 @@ const difficulty = ref<Difficulty>('easy')
 const isPlaying = ref(false)
 const selectedIndex = ref<number | null>(null)
 
-const baseGrid = [
-  [5, 3, 0, 0, 7, 0, 0, 0, 0],
-  [6, 0, 0, 1, 9, 5, 0, 0, 0],
-  [0, 9, 8, 0, 0, 0, 0, 6, 0],
-  [8, 0, 0, 0, 6, 0, 0, 0, 3],
-  [4, 0, 0, 8, 0, 3, 0, 0, 1],
-  [7, 0, 0, 0, 2, 0, 0, 0, 6],
-  [0, 6, 0, 0, 0, 0, 2, 8, 0],
-  [0, 0, 0, 4, 1, 9, 0, 0, 5],
-  [0, 0, 0, 0, 8, 0, 0, 7, 9]
-]
-
-const grid = ref<number[][]>(baseGrid.map(row => [...row]))
-const initialGrid = ref<number[][]>(baseGrid.map(row => [...row]))
+const grid = ref<number[][]>([])
+const initialGrid = ref<number[][]>([])
 
 const flatGrid = computed(() => grid.value.flat())
+
+const shuffle = <T,>(arr: T[]): T[] => {
+  const copy = [...arr]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+const shuffledIndices = () => {
+  const base = [0, 1, 2]
+  const bands = shuffle(base)
+  return bands.flatMap(band => shuffle(base).map(offset => band * 3 + offset))
+}
+
+const createSolvedBoard = () => {
+  const rows = shuffledIndices()
+  const cols = shuffledIndices()
+  const nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9])
+  const pattern = (r: number, c: number) => (r * 3 + Math.floor(r / 3) + c) % 9
+
+  return rows.map(r => cols.map(c => nums[pattern(r, c)]))
+}
+
+const holesByDifficulty: Record<Difficulty, number> = {
+  easy: 35,
+  medium: 45,
+  hard: 55
+}
+
+const createPuzzle = (difficulty: Difficulty) => {
+  const solved = createSolvedBoard()
+  const puzzle = solved.map(row => [...row])
+  const totalHoles = holesByDifficulty[difficulty] ?? holesByDifficulty.easy
+  const positions = shuffle(Array.from({ length: 81 }, (_, i) => i))
+  for (let i = 0; i < totalHoles; i++) {
+    const pos = positions[i]
+    const row = Math.floor(pos / 9)
+    const col = pos % 9
+    puzzle[row][col] = 0
+  }
+  return puzzle
+}
+
+const loadPuzzle = (level: Difficulty) => {
+  const puzzle = createPuzzle(level)
+  grid.value = puzzle.map(row => [...row])
+  initialGrid.value = puzzle.map(row => [...row])
+  selectedIndex.value = null
+}
+
+loadPuzzle(difficulty.value)
 
 const rowColFromIndex = (idx: number) => {
   const row = Math.floor(idx / 9)
@@ -190,6 +231,7 @@ const canEditSelected = computed(() => {
 })
 
 const startGame = () => {
+  loadPuzzle(difficulty.value)
   isPlaying.value = true
 }
 
@@ -198,7 +240,13 @@ const pauseGame = () => {
 }
 
 const resetGrid = () => {
-  grid.value = initialGrid.value.map(row => [...row])
-  selectedIndex.value = null
+  loadPuzzle(difficulty.value)
+  isPlaying.value = false
 }
+
+watch(difficulty, newLevel => {
+  if (!isPlaying.value) {
+    loadPuzzle(newLevel)
+  }
+})
 </script>

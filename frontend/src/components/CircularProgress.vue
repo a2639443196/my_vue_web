@@ -60,6 +60,6 @@ const muted = 'var(--muted)'
 
 const radius = computed(() => (props.size - props.strokeWidth) / 2)
 const circumference = computed(() => radius.value * 2 * Math.PI)
-const percentage = computed(() => (props.value / props.max) * 100)
+const percentage = computed(() => Math.min((props.value / props.max) * 100, 100))
 const offset = computed(() => circumference.value - (percentage.value / 100) * circumference.value)
 </script>

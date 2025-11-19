@@ -34,7 +34,9 @@ http.interceptors.response.use(
       error?.response?.data?.message ||
       error?.message ||
       '请求失败，请稍后再试'
-    return Promise.reject(new Error(message))
+    const enriched = new Error(message) as Error & { status?: number }
+    enriched.status = error?.response?.status
+    return Promise.reject(enriched)
   }
 )
 

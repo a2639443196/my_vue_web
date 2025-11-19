@@ -33,17 +33,17 @@ export interface ProfileStats {
 
 export const profileApi = {
   async fetchProfile(): Promise<Profile> {
-    const { data } = await http.get<Profile>('/profile/')
+    const { data } = await http.get<Profile>('/auth/profile/')
     return data
   },
 
   async updateProfile(payload: ProfileUpdatePayload): Promise<Profile> {
-    const { data } = await http.put<Profile>('/profile/', payload)
+    const { data } = await http.put<Profile>('/auth/profile/', payload)
     return data
   },
 
   async fetchAchievements(): Promise<Achievement[]> {
-    const { data } = await http.get<Achievement[]>('/profile/achievements')
+    const { data } = await http.get<Achievement[]>('/auth/profile/achievements')
     return data
   },
 

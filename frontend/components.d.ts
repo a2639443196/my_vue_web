@@ -7,8 +7,17 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AppToast: typeof import('./src/components/AppToast.vue')['default']
+    Button: typeof import('./src/components/ui/Button.vue')['default']
+    CircularProgress: typeof import('./src/components/CircularProgress.vue')['default']
+    GlassCard: typeof import('./src/components/GlassCard.vue')['default']
+    Input: typeof import('./src/components/ui/Input.vue')['default']
+    Label: typeof import('./src/components/ui/Label.vue')['default']
+    QuickAction: typeof import('./src/components/QuickAction.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SideMenu: typeof import('./src/components/SideMenu.vue')['default']
+    TopNav: typeof import('./src/components/TopNav.vue')['default']
     VApp: typeof import('vuetify/components')['VApp']
     VAppBar: typeof import('vuetify/components')['VAppBar']
     VAppBarNavIcon: typeof import('vuetify/components')['VAppBarNavIcon']

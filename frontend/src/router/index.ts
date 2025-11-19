@@ -181,28 +181,34 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
-  // Initialize user store if not initialized
-  if (!userStore.initialized) {
-    await userStore.initialize()
-  }
+  try {
+    // Initialize user store if not initialized
+    if (!userStore.initialized) {
+      await userStore.initialize()
+    }
 
-  const isAuthenticated = userStore.isAuthenticated
-  const requiresAuth = to.meta.requiresAuth
-  const hideForAuth = to.meta.hideForAuth
+    const isAuthenticated = userStore.isAuthenticated
+    const requiresAuth = to.meta.requiresAuth
+    const hideForAuth = to.meta.hideForAuth
 
-  // Handle authentication
-  if (requiresAuth && !isAuthenticated) {
-    // Save intended destination
-    const redirect = to.fullPath !== '/' ? to.fullPath : undefined
-    next({
-      name: 'Login',
-      query: redirect ? { redirect } : undefined
-    })
-  } else if (hideForAuth && isAuthenticated) {
-    // Redirect authenticated users away from auth pages
-    next({ name: 'Home' })
-  } else {
-    // Proceed with navigation
+    // Handle authentication
+    if (requiresAuth && !isAuthenticated) {
+      // Save intended destination
+      const redirect = to.fullPath !== '/' ? to.fullPath : undefined
+      next({
+        name: 'Login',
+        query: redirect ? { redirect } : undefined
+      })
+    } else if (hideForAuth && isAuthenticated) {
+      // Redirect authenticated users away from auth pages
+      next({ name: 'Home' })
+    } else {
+      // Proceed with navigation
+      next()
+    }
+  } catch (error) {
+    console.error('Router guard error:', error)
+    // If initialization fails, allow navigation to prevent getting stuck
     next()
   }
 })
